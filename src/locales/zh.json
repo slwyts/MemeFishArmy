@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "home": "首页",
+    "features": "项目特色",
+    "roadmap": "路线图",
+    "faq": "常见问题",
+    "twitter": "推特",
+    "discord": "Discord"
+  },
+  "wallet": {
+    "connect": "连接钱包",
+    "connecting": "连接中...",
+    "connected": "已连接"
+  },
+  "home": {
+    "title1": "MemeFish Army",
+    "title2": "互联网鱼缸",
+    "subtitle": "每一条鱼都是灵魂绑定的网络亚文化图腾。准备好捕捉属于你的那一条了吗？",
+    "mint_card": {
+      "title": "官方安全铸造",
+      "status_whitelist": "白名单状态",
+      "status_whitelisted": "资格已确认",
+      "status_not_whitelisted": "资格未找到",
+      "status_minted": "已铸造 / 限额",
+      "status_connect_prompt": "连接钱包以验证您的铸造资格",
+      "button_connect": "请先连接钱包",
+      "button_minting": "铸造中...",
+      "button_not_whitelisted": "未在白名单",
+      "button_limit_reached": "已达到上限",
+      "button_mint_now": "立即铸造",
+      "feedback_sending": "交易已发送，等待区块链确认...",
+      "feedback_success": "铸造成功！欢迎加入鱼军团！",
+      "feedback_error": "铸造失败",
+      "view_on_bscscan": "在 BscScan 上查看"
+    }
+  },
+  "features": {
+    "title": "项目特色",
+    "subtitle": "是什么让模因鱼军团与众不同？",
+    "item1_title": "丰富的模因文化",
+    "item1_desc": "从经典暴漫到区块链热梗，每一条鱼都是对互联网亚文化的精心致敬。",
+    "item2_title": "高品质艺术",
+    "item2_desc": "基于分层PSD的生成艺术，确保每种组合都独一无二且视觉效果出众，更有稀有的发光变体。",
+    "item3_title": "灵魂绑定代币",
+    "item3_desc": "用户铸造的NFT不可转让，以此打造一个真正的忠实成员收藏，并增强社区认同感。"
+  },
+  "roadmap": {
+    "title": "发展路线图",
+    "subtitle": "我们通往未来互联网鱼缸的旅程。",
+    "phase1_title": "第一阶段：创世铸造",
+    "phase1_desc": "发布官网和铸造DApp。通过白名单和空投建立核心社区。",
+    "phase2_title": "第二阶段：社区扩张",
+    "phase2_desc": "开放Discord持有者专属频道。举办社区活动和Meme创作大赛。",
+    "phase3_title": "第三阶段：生态与合作",
+    "phase3_desc": "探索与其他Meme项目的跨界合作。为空投鱼开发质押或其他应用功能。",
+    "phase4_title": "第四阶段：元宇宙水族馆",
+    "phase4_desc": "规划并开发一个虚拟空间，让持有者可以展示他们的模因鱼。To the Moon!"
+  },
+  "faq": {
+    "title": "常见问题",
+    "subtitle": "所有你想知道的。",
+    "q1": "什么是模因鱼军团 (MemeFish Army)？",
+    "a1": "它是一个部署在币安智能链上的，由5000个基于互联网模因文化独特生成的ERC-1155 NFT合集。",
+    "q2": "“灵魂绑定”是什么意思？",
+    "a2": "意味着您亲手铸造的NFT（ID > 500）将无法被交易或出售。它将永久绑定于您的钱包，作为您早期支持的证明。",
+    "q3": "我如何才能加入白名单？",
+    "a3": "在我们的社区保持活跃！关注我们的Twitter并加入Discord，以获取有关白名单资格和活动的公告。",
+    "q4": "铸造需要多少钱？",
+    "a4": "对于白名单用户，目前铸造是免费的，您只需要支付BSC网络上的Gas费用。"
+  },
+    "admin": {
+    "title": "管理员仪表盘",
+    "subtitle": "管理您的 MemeFish Army 合约",
+    "whitelist_title": "白名单管理",
+    "whitelist_single_placeholder": "输入单个地址 (0x...)",
+    "whitelist_add": "添加",
+    "whitelist_remove": "移除",
+    "whitelist_batch_placeholder": "输入多个地址，每行一个",
+    "whitelist_batch_add": "批量添加",
+    "whitelist_batch_remove": "批量移除",
+    "settings_title": "合约设置",
+    "settings_max_mints": "每用户最大铸造数",
+    "settings_base_uri": "基础 URI",
+    "settings_royalty": "版税 (基点, 例如 500 代表 5%)",
+    "update_button": "更新",
+    "success_msg": "交易成功！",
+    "error_msg": "交易失败"
+    }
+}
