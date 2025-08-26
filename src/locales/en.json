@@ -1,0 +1,89 @@
+{
+  "nav": {
+    "home": "Home",
+    "features": "Features",
+    "roadmap": "Roadmap",
+    "faq": "FAQ",
+    "twitter": "Twitter",
+    "discord": "Discord"
+  },
+  "wallet": {
+    "connect": "Connect Wallet",
+    "connecting": "Connecting...",
+    "connected": "Connected"
+  },
+  "home": {
+    "title1": "MemeFish Army",
+    "title2": "The Internet's Fish Tank",
+    "subtitle": "Each fish is a soul-bound icon of web subculture. Ready to catch yours?",
+    "mint_card": {
+      "title": "Official Secure Mint",
+      "status_whitelist": "Whitelist Status",
+      "status_whitelisted": "Verified",
+      "status_not_whitelisted": "Not Found",
+      "status_minted": "Minted / Limit",
+      "status_connect_prompt": "Connect wallet to verify eligibility",
+      "button_connect": "Please Connect Wallet",
+      "button_minting": "Minting...",
+      "button_not_whitelisted": "Not on Whitelist",
+      "button_limit_reached": "Limit Reached",
+      "button_mint_now": "Mint Now",
+      "feedback_sending": "Transaction sent, awaiting confirmation...",
+      "feedback_success": "Mint successful! Welcome to the Army!",
+      "feedback_error": "Mint failed",
+      "view_on_bscscan": "View on BscScan"
+    }
+  },
+  "features": {
+    "title": "Project Features",
+    "subtitle": "What makes the MemeFish Army unique?",
+    "item1_title": "Rich Meme Culture",
+    "item1_desc": "From classic rage comics to blockchain jokes, each fish is a carefully crafted tribute to internet subcultures.",
+    "item2_title": "High-Quality Art",
+    "item2_desc": "Generative art based on layered PSDs, ensuring each combination is unique and visually appealing, with rare luminous variations.",
+    "item3_title": "Soul-Bound Tokens",
+    "item3_desc": "User-minted NFTs are non-transferable, creating a true collection of loyal members and enhancing community identity."
+  },
+  "roadmap": {
+    "title": "Development Roadmap",
+    "subtitle": "Our journey into the future of the internet's fish tank.",
+    "phase1_title": "Phase 1: Genesis Mint",
+    "phase1_desc": "Launch the official website and minting DApp. Build the core community through whitelisting and airdrops.",
+    "phase2_title": "Phase 2: Community Expansion",
+    "phase2_desc": "Launch Discord holder-exclusive channels. Host community events and meme creation contests.",
+    "phase3_title": "Phase 3: Ecosystem & Collabs",
+    "phase3_desc": "Explore collaborations with other meme projects. Develop staking or other utilities for Airdrop Fish.",
+    "phase4_title": "Phase 4: The Metaverse Aquarium",
+    "phase4_desc": "Plan and develop a virtual space where holders can display their MemeFish. To the Moon!"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Everything you need to know.",
+    "q1": "What is MemeFish Army?",
+    "a1": "It's a collection of 5000 unique, generative ERC-1155 NFTs based on internet meme culture, deployed on the Binance Smart Chain.",
+    "q2": "What does 'soul-bound' mean?",
+    "a2": "It means the NFTs you mint (Token ID > 500) cannot be transferred or sold. They are permanently bound to your wallet as a proof of your early support.",
+    "q3": "How can I get on the whitelist?",
+    "a3": "Stay active in our community! Follow our Twitter and join our Discord for announcements on whitelist opportunities and events.",
+    "q4": "What is the mint price?",
+    "a4": "The mint is currently free for whitelisted users, you only need to pay the gas fee on the BSC network."
+  },
+    "admin": {
+    "title": "Admin Dashboard",
+    "subtitle": "Manage your MemeFish Army contract.",
+    "whitelist_title": "Whitelist Management",
+    "whitelist_single_placeholder": "Enter single address (0x...)",
+    "whitelist_add": "Add",
+    "whitelist_remove": "Remove",
+    "whitelist_batch_placeholder": "Enter multiple addresses, one per line",
+    "whitelist_batch_add": "Batch Add",
+    "whitelist_batch_remove": "Batch Remove",
+    "settings_title": "Contract Settings",
+    "settings_max_mints": "Max Mints Per User",
+    "settings_base_uri": "Base URI",
+    "settings_royalty": "Royalty (in BPS, e.g., 500 for 5%)",
+    "update_button": "Update",
+    "success_msg": "Transaction successful!",
+    "error_msg": "Transaction failed"
+    }
+}
