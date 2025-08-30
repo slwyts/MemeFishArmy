@@ -5,12 +5,20 @@ import { useWallet } from '../composables/useWallet'
 
 const { t } = useI18n()
 const walletStore = useWalletStore()
-const { connect } = useWallet()
+const { connect, disconnect } = useWallet()
+
+const handleClick = () => {
+  if (walletStore.isConnected) {
+    disconnect()
+  } else {
+    connect()
+  }
+}
 </script>
 
 <template>
   <button
-    @click="connect"
+    @click="handleClick"
     class="px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition duration-200 ease-in-out"
     :disabled="walletStore.isConnecting"
   >

@@ -35,8 +35,8 @@ router.beforeEach(async (to, from, next) => {
     if (walletStore.connectedAddress && walletStore.connectedAddress.toLowerCase() === contractStore.ownerAddress?.toLowerCase()) {
       next() // 是 owner，放行
     } else {
-      //next('/') // 不是 owner，重定向到首页
-      next() // 是 owner，放行
+      next('/') // 不是 owner，重定向到首页
+      // next() // 移除或注释掉这行错误的代码
     }
   } else {
     next() // 不需要验证的页面，直接放行
