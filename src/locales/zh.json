@@ -23,7 +23,7 @@
       "status_not_whitelisted": "资格未找到",
       "status_minted": "您的铸造数量",
       "status_connect_prompt": "连接钱包以验证您的铸造资格",
-      "button_connect": "请先连接钱包",
+      "button_connect": "连接钱包",
       "button_minting": "铸造中...",
       "button_not_whitelisted": "未在白名单",
       "button_limit_reached": "已达到上限",
@@ -99,6 +99,19 @@
     "settings_royalty": "版税 (基点, 例如 500 代表 5%)",
     "update_button": "更新",
     "success_msg": "交易成功！",
-    "error_msg": "交易失败"
+    "error_msg": "交易失败",
+    "queries_title": "合约数据查询",
+    "queries_subtitle": "从区块链扫描并读取合约数据。",
+    "whitelist_scan_title": "白名单地址",
+    "whitelist_scan_desc": "当前白名单中的所有地址列表。",
+    "holders_scan_title": "NFT 持有人",
+    "holders_scan_desc": "当前的NFT持有人及其拥有的代币列表。",
+    "show_tokens": "显示代币",
+    "hide_tokens": "隐藏代币",
+    "loading": "正在从合约加载数据...",
+    "pagination_prev": "上一页",
+    "pagination_next": "下一页",
+    "page_of": "第 {currentPage} 页 / 共 {totalPages} 页",
+    "total_items": "共 {total} 个地址"
   }
 }

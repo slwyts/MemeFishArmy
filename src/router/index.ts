@@ -1,5 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import AdminView from '../views/AdminView.vue' // 引入AdminView
+import SettingsView from '../views/admin/SettingsView.vue' // 引入子页面
+import QueriesView from '../views/admin/QueriesView.vue'   // 引入子页面
 import { useWalletStore } from '../store/wallet'
 import { useContractStore } from '../store/contract'
 
@@ -13,33 +16,49 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      name: 'admin',
-      component: () => import('../views/AdminView.vue'),
-      meta: { requiresAuth: true } // 添加一个元字段，表示此路由需要验证
+      component: AdminView, // AdminView 现在是布局
+      meta: { requiresAuth: true },
+      children: [
+        {
+            path: '',
+            redirect: '/admin/settings', // 默认重定向到设置页面
+        },
+        {
+          path: 'settings',
+          name: 'admin-settings',
+          component: SettingsView
+        },
+        {
+          path: 'queries',
+          name: 'admin-queries',
+          component: QueriesView
+        }
+      ]
     }
   ]
 })
 
-// 全局前置守卫
+// 全局前置守卫 (保持不变)
 router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
     const walletStore = useWalletStore()
     const contractStore = useContractStore()
 
-    // 确保我们已经获取了 owner 地址
+    if (!walletStore.isConnected) {
+      return next('/')
+    }
+
     if (!contractStore.ownerAddress) {
       await contractStore.fetchContractData()
     }
 
-    // 检查当前连接的地址是否为 owner
-    if (walletStore.connectedAddress && walletStore.connectedAddress.toLowerCase() === contractStore.ownerAddress?.toLowerCase()) {
-      next() // 是 owner，放行
+    if (walletStore.connectedAddress && contractStore.ownerAddress && walletStore.connectedAddress.toLowerCase() === contractStore.ownerAddress.toLowerCase()) {
+      next()
     } else {
-      next('/') // 不是 owner，重定向到首页
-      // next() // 移除或注释掉这行错误的代码
+      next('/')
     }
   } else {
-    next() // 不需要验证的页面，直接放行
+    next()
   }
 })
 
