@@ -38,8 +38,8 @@ const router = createRouter({
   ]
 })
 
-// 全局前置守卫 (保持不变)
-router.beforeEach(async (to, from, next) => {
+// 全局前置守卫
+router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresAuth) {
     const walletStore = useWalletStore()
     const contractStore = useContractStore()
