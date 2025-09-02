@@ -99,6 +99,19 @@
     "settings_royalty": "Royalty (in BPS, e.g., 500 for 5%)",
     "update_button": "Update",
     "success_msg": "Transaction successful!",
-    "error_msg": "Transaction failed"
-    }
+    "error_msg": "Transaction failed",
+    "queries_title": "Contract Queries",
+    "queries_subtitle": "Scan and view data from the blockchain.",
+    "whitelist_scan_title": "Whitelisted Addresses",
+    "whitelist_scan_desc": "A list of all addresses currently on the whitelist.",
+    "holders_scan_title": "NFT Holders",
+    "holders_scan_desc": "A list of all current NFT holders and their tokens.",
+    "show_tokens": "Show Tokens",
+    "hide_tokens": "Hide Tokens",
+    "loading": "Loading data from contract...",
+    "pagination_prev": "Previous",
+    "pagination_next": "Next",
+    "page_of": "Page {currentPage} of {totalPages}",
+    "total_items": "Total: {total} addresses"
+  }
 }

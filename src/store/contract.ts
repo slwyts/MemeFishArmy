@@ -15,27 +15,50 @@ export const useContractStore = defineStore('contract', () => {
   const isMinting = ref(false)
   const mintTxHash = ref<string | null>(null)
   const mintError = ref<string | null>(null)
+  const baseURI = ref<string | null>(null)
+  const royaltyBps = ref<number | null>(null)
+
+  const whitelist = ref<string[]>([])
+  const holders = ref<Record<string, number[]>>({})
+  const hasScanned = ref(false)
+
 
   const { getProvider, getSigner, getContract } = useWallet()
   const walletStore = useWalletStore()
 
   async function fetchContractData() {
-    // Rimuovi il controllo !walletStore.isConnected
     isLoading.value = true
     try {
       const provider = getProvider()
       const contract = getContract(provider)
 
-      const [maxMints, owner] = await Promise.all([
+      const [maxMints, owner, tokenOneUri, royaltyInfo] = await Promise.all([
         contract.maxMintsPerUser(),
         contract.owner(),
+        contract.uri(1),
+        contract.royaltyInfo(1, 10000)
       ])
+
       maxMintsPerUser.value = Number(maxMints)
       ownerAddress.value = owner
+
+      if (tokenOneUri && typeof tokenOneUri === 'string') {
+        const lastSlashIndex = tokenOneUri.lastIndexOf('/')
+        if (lastSlashIndex !== -1) {
+          baseURI.value = tokenOneUri.substring(0, lastSlashIndex + 1)
+        }
+      }
+
+      if (royaltyInfo && royaltyInfo.length > 1) {
+        royaltyBps.value = Number(royaltyInfo[1])
+      }
+
     } catch (error) {
       console.error("Failed to fetch contract data:", error)
       maxMintsPerUser.value = 0
       ownerAddress.value = null
+      baseURI.value = null
+      royaltyBps.value = null
     } finally {
       isLoading.value = false
     }
@@ -58,52 +81,138 @@ export const useContractStore = defineStore('contract', () => {
       userMintCount.value = Number(mintedCount)
     } catch (error) {
       console.error("Failed to fetch user data:", error)
-      // Reset values
       isWhitelisted.value = false
       userMintCount.value = 0
     }
   }
 
-  // --- Funzione di Mint ---
   async function handleMint() {
     if (!walletStore.isConnected) {
       alert("Please connect your wallet first.")
       return
     }
-
     isMinting.value = true
     mintError.value = null
     mintTxHash.value = null
-
     try {
       const signer = await getSigner()
       const contractWithSigner = getContract(signer)
-
-      console.log("Sending mint transaction...")
       const tx = await contractWithSigner.mint()
-
-      console.log("Transaction sent, waiting for confirmation...", tx.hash)
       mintTxHash.value = tx.hash
-
       await tx.wait()
-      console.log("Transaction confirmed!")
-
       await fetchUserData()
     } catch (error: any) {
       console.error("Minting failed:", error)
-      const reason = error.reason || "An unknown error occurred."
-      mintError.value = reason
+      mintError.value = error.reason || "An unknown error occurred."
     } finally {
       isMinting.value = false
     }
   }
+  
+  async function scanForWhitelist() {
+    try {
+      const provider = getProvider()
+      const contract = getContract(provider)
+      const filter = contract.filters.WhitelistUpdated()
+      const events = await contract.queryFilter(filter)
 
-  // --- Azioni Admin ---
+      const currentWhitelist = new Map<string, boolean>()
+      events.forEach((event: any) => {
+        if (event.args) {
+          const user = event.args.user
+          const added = event.args.added
+          currentWhitelist.set(user, added)
+        }
+      })
+
+      const addresses: string[] = []
+      currentWhitelist.forEach((isAdded, address) => {
+        if (isAdded) {
+          addresses.push(address)
+        }
+      })
+      whitelist.value = addresses
+    } catch (error) {
+      console.error("Failed to scan for whitelist:", error)
+      whitelist.value = []
+    }
+  }
+
+  async function scanForHolders() {
+     try {
+        const provider = getProvider()
+        const contract = getContract(provider)
+        const zeroAddress = '0x0000000000000000000000000000000000000000'
+
+        const singleFilter = contract.filters.TransferSingle()
+        const batchFilter = contract.filters.TransferBatch()
+
+        const [singleEvents, batchEvents] = await Promise.all([
+            contract.queryFilter(singleFilter),
+            contract.queryFilter(batchFilter)
+        ]);
+
+        const ownership = new Map<number, string>()
+
+        batchEvents.forEach((event: any) => {
+            if (event.args && event.args.from === zeroAddress) {
+                const ids = event.args.ids.map(Number)
+                const to = event.args.to
+                ids.forEach((id: number) => ownership.set(id, to))
+            }
+        });
+
+        singleEvents.forEach((event: any) => {
+            if (event.args && event.args.from === zeroAddress) {
+                const id = Number(event.args.id)
+                const to = event.args.to
+                ownership.set(id, to)
+            }
+        });
+        
+        const finalHolders: Record<string, number[]> = {}
+        ownership.forEach((owner, tokenId) => {
+            if (!finalHolders[owner]) {
+                finalHolders[owner] = []
+            }
+            finalHolders[owner].push(tokenId)
+        });
+
+        for (const owner in finalHolders) {
+            finalHolders[owner].sort((a, b) => a - b);
+        }
+
+        holders.value = finalHolders
+
+     } catch (error) {
+         console.error("Failed to scan for holders:", error)
+         holders.value = {}
+     }
+  }
+    
+  // ** FIX: Added space between async and function **
+  async function fetchAllQueryData() {
+      if (hasScanned.value) return; 
+      isLoading.value = true;
+      try {
+          await Promise.all([scanForWhitelist(), scanForHolders()]);
+          hasScanned.value = true;
+      } catch (error) {
+          console.error("Failed to fetch all query data:", error);
+      } finally {
+          isLoading.value = false;
+      }
+  }
+
   const adminAction = async (methodName: string, ...args: any[]) => {
     const signer = await getSigner()
     const contractWithSigner = getContract(signer)
     const tx = await contractWithSigner[methodName](...args)
     await tx.wait()
+    await fetchContractData()
+    hasScanned.value = false;
+    whitelist.value = [];
+    holders.value = {};
   }
 
   const updateWhitelist = async (addresses: string[], statuses: boolean[]) => {
@@ -128,7 +237,6 @@ export const useContractStore = defineStore('contract', () => {
   }
 
   return {
-    // State
     totalSupply,
     maxMintsPerUser,
     isLoading,
@@ -138,7 +246,11 @@ export const useContractStore = defineStore('contract', () => {
     mintTxHash,
     mintError,
     ownerAddress,
-    // Actions
+    baseURI,       
+    royaltyBps,
+    whitelist,
+    holders,
+    hasScanned,
     fetchContractData,
     fetchUserData,
     handleMint,
@@ -146,5 +258,8 @@ export const useContractStore = defineStore('contract', () => {
     setMaxMints,
     setBaseURI,
     setRoyalty,
+    scanForWhitelist,
+    scanForHolders,
+    fetchAllQueryData,
   }
 })

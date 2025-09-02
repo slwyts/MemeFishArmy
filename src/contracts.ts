@@ -1,8 +1,12 @@
-//export const memeFishArmyAddress = '0x1792bFbE22F9Fe3A724dA47b0Cd28BaFe9dE60dC'//bsc
-export const memeFishArmyAddress = '0xC194CfEcb40953763F8B6F5c81bdD1AeC14a5fF4'//pol
-export const desiredChainId = 137; // Polygon Mainnet
+export const memeFishArmyAddress = '0x1792bFbE22F9Fe3A724dA47b0Cd28BaFe9dE60dC'
+export const desiredChainId = 56; 
+// BSC Mainnet
 
-//bsc mainnet
+// export const memeFishArmyAddress = '0xC194CfEcb40953763F8B6F5c81bdD1AeC14a5fF4'
+// export const desiredChainId = 137;
+// Polygon Mainnet
+
+//abi
 export const memeFishArmyAbi = [
 	{
 		"inputs": [
