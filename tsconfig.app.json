@@ -11,18 +11,18 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
-    /* --- 新增代码开始 --- */
+    /* Module */
+    "module": "ESNext",
+    "moduleResolution": "bundler",
     
-    // 1. 添加对 JSON 模块的支持
+    /* Import Meta */
     "resolveJsonModule": true,
     
-    // 2. 配置路径别名
+    /* Path Alias */
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
-
-    /* --- 新增代码结束 --- */
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

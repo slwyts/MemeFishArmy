@@ -1,12 +1,11 @@
-export const memeFishArmyAddress = '0x1792bFbE22F9Fe3A724dA47b0Cd28BaFe9dE60dC'
-export const desiredChainId = 56; 
-// BSC Mainnet
+// 从环境变量读取配置
+export const memeFishArmyAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS as string
+export const mfacSystemAddress = import.meta.env.VITE_MFAC_SYSTEM_CONTRACT_ADDRESS as string
+export const desiredChainId = Number(import.meta.env.VITE_CHAIN_ID) || 56
+export const chainName = import.meta.env.VITE_CHAIN_NAME || 'BSC Mainnet'
+export const rpcUrl = import.meta.env.VITE_RPC_URL
 
-// export const memeFishArmyAddress = '0xC194CfEcb40953763F8B6F5c81bdD1AeC14a5fF4'
-// export const desiredChainId = 137;
-// Polygon Mainnet
-
-//abi
+// MemeFishArmy NFT Contract ABI
 export const memeFishArmyAbi = [
 	{
 		"inputs": [
@@ -838,4 +837,10 @@ export const memeFishArmyAbi = [
 		"stateMutability": "view",
 		"type": "function"
 	}
+]
+
+// MFAC System Contract ABI (待部署后更新)
+export const mfacSystemAbi = [
+	// TODO: 部署 MFACSystem 合约后，将完整 ABI 添加到这里
+	// 可以使用 Remix 或 Hardhat 编译合约后导出 ABI
 ]

@@ -4,9 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "vite --mode development",
+    "build": "vue-tsc -b && vite build --mode development",
+    "build:prod": "vue-tsc -b && vite build --mode production",
+    "preview": "vite preview",
+    "preview:prod": "vite preview --mode production"
   },
   "dependencies": {
     "ethers": "^6.15.0",
