@@ -5,9 +5,22 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+// ============================================
+// NFT 合约接口 (仅用于调用外部 NFT 合约)
+// 注意: 这个接口不需要部署，只用于 MFACSystem 调用老的 NFT 合约
+// ============================================
+interface IMemeFishNFT {
+    function addToWhitelist(address user) external;
+    function removeFromWhitelist(address user) external;
+    function whitelist(address user) external view returns (bool);
+    function balanceOf(address account, uint256 id) external view returns (uint256);
+    function AIRDROP_SUPPLY() external view returns (uint256);
+    function MAX_TOKEN_ID() external view returns (uint256);
+}
+
 /**
  * @title MFACSystem
- * @dev 巨型合约，整合 MFAC 代币、NFT 管理、空投、质押、分红、DAO 等所有功能
+ * @dev 整合 MFAC 代币、NFT 管理、空投、质押、分红、DAO 等所有功能
  * 总供应量: 10亿 MFAC
  * 支持的功能:
  * - MFAC 代币 (带交易手续费)
@@ -23,16 +36,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     // ============================================
     // 状态变量 - 基础配置
     // ============================================
-    
-    // NFT 合约接口
-    interface IMemeFishNFT {
-        function addToWhitelist(address user) external;
-        function removeFromWhitelist(address user) external;
-        function whitelist(address user) external view returns (bool);
-        function balanceOf(address account, uint256 id) external view returns (uint256);
-        function AIRDROP_SUPPLY() external view returns (uint256);
-        function MAX_TOKEN_ID() external view returns (uint256);
-    }
     
     IMemeFishNFT public nftContract;
     
@@ -184,11 +187,9 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     // 状态变量 - 代币分配地址
     // ============================================
     
-    address public alphaPoolAddress;
-    address public marketingAddress;
-    address public clubAddress;
-    address public foundationAddress;
-    address public teamAddress;
+    address public projectWallet;      // 项目方钱包 (营销+俱乐部+团队+Alpha板块 = 11%)
+    address public foundationWallet;   // 基金会钱包 (10%)
+    address public liquidityPool;      // 流动性池 (Alpha底池 10%)
     
     // ============================================
     // 事件
@@ -213,21 +214,20 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     
     constructor(
         address _nftContract,
-        address _alphaPool,
-        address _marketing,
-        address _club,
-        address _foundation,
-        address _team
+        address _projectWallet,
+        address _foundationWallet,
+        address _liquidityPool
     ) ERC20("Meme Fish Army Coin", "MFAC") Ownable(msg.sender) {
         require(_nftContract != address(0), "Invalid NFT contract");
+        require(_projectWallet != address(0), "Invalid project wallet");
+        require(_foundationWallet != address(0), "Invalid foundation wallet");
+        require(_liquidityPool != address(0), "Invalid liquidity pool");
         
         nftContract = IMemeFishNFT(_nftContract);
         
-        alphaPoolAddress = _alphaPool;
-        marketingAddress = _marketing;
-        clubAddress = _club;
-        foundationAddress = _foundation;
-        teamAddress = _team;
+        projectWallet = _projectWallet;
+        foundationWallet = _foundationWallet;
+        liquidityPool = _liquidityPool;
         
         // 铸造总量
         _mint(address(this), TOTAL_SUPPLY);
@@ -238,7 +238,8 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         // 排除手续费
         isExcludedFromFee[address(this)] = true;
         isExcludedFromFee[owner()] = true;
-        isExcludedFromFee[_alphaPool] = true;
+        isExcludedFromFee[_liquidityPool] = true;
+        isExcludedFromFee[_projectWallet] = true;
     }
     
     // ============================================
@@ -246,29 +247,21 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     // ============================================
     
     function _distributeTokens() private {
-        // Alpha 底池 10% = 1亿
-        _transfer(address(this), alphaPoolAddress, 100_000_000 * 10**18);
+        // 流动性池 (Alpha底池) 10% = 1亿
+        _transfer(address(this), liquidityPool, 100_000_000 * 10**18);
         
-        // Alpha 板块 8% = 8000万
-        _transfer(address(this), alphaPoolAddress, 80_000_000 * 10**18);
-        
-        // 营销 1% = 1000万
-        _transfer(address(this), marketingAddress, 10_000_000 * 10**18);
-        
-        // 俱乐部 1% = 1000万
-        _transfer(address(this), clubAddress, 10_000_000 * 10**18);
+        // 项目方钱包 11% = 1.1亿
+        // 包含: Alpha板块8% + 营销1% + 俱乐部1% + 团队1%
+        _transfer(address(this), projectWallet, 110_000_000 * 10**18);
         
         // 基金会 10% = 1亿
-        _transfer(address(this), foundationAddress, 100_000_000 * 10**18);
+        _transfer(address(this), foundationWallet, 100_000_000 * 10**18);
         
-        // 团队 1% = 1000万
-        _transfer(address(this), teamAddress, 10_000_000 * 10**18);
-        
-        // 剩余的留在合约中:
-        // - SBT 空投池: 4.5亿
-        // - 流通 NFT 空投池: 5000万
-        // - 质押池: 5000万
-        // - Super Builder 池: 1.4亿
+        // 剩余 69% = 6.9亿 留在合约中:
+        // - SBT 空投池: 45% (4.5亿)
+        // - 流通 NFT 空投池: 5% (5000万)
+        // - 质押池: 5% (5000万)
+        // - Super Builder 池: 14% (1.4亿)
     }
     
     // ============================================
@@ -578,8 +571,8 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         }
         
         // 计算奖励
-        uint256 days = stakingDuration / 1 days;
-        uint256 reward = (BASE_DAILY_REWARD * days * weight) / 100;
+        uint256 dayCount = stakingDuration / 1 days;
+        uint256 reward = (BASE_DAILY_REWARD * dayCount * weight) / 100;
         
         return reward;
     }
