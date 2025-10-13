@@ -16,6 +16,8 @@ interface IMemeFishNFT {
     function balanceOf(address account, uint256 id) external view returns (uint256);
     function AIRDROP_SUPPLY() external view returns (uint256);
     function MAX_TOKEN_ID() external view returns (uint256);
+    function setRoyalty(uint96 royaltyFraction) external;
+    function owner() external view returns (address);
 }
 
 /**
@@ -122,21 +124,31 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     // 状态变量 - 分红系统
     // ============================================
     
-    uint256 public circulatingNFTDividendPool;
-    uint256 public sbtNFTDividendPool;
+    // 代币手续费分红池 (MFAC 代币)
+    uint256 public circulatingNFTDividendPool;  // 流通NFT代币分红
+    uint256 public sbtNFTDividendPool;          // SBT代币分红
+    
+    // NFT 版税分红池 (BNB)
+    uint256 public nftRoyaltyPool;              // NFT版税总池
+    uint256 public totalNFTRoyaltyReceived;     // 历史累计版税收入
     
     // user => lastClaimedDividend
     mapping(address => uint256) public lastClaimedDividendCirculating;
     mapping(address => uint256) public lastClaimedDividendSBT;
+    mapping(address => uint256) public lastClaimedRoyalty; // BNB版税领取记录
     
     uint256 public totalDividendCirculating;
     uint256 public totalDividendSBT;
+    
+    // NFT 版税分配比例
+    uint256 public constant ROYALTY_TO_CIRCULATING = 50; // 50% 给流通NFT持有者
+    uint256 public constant ROYALTY_TO_DAO = 50;         // 50% 进入DAO国库
     
     // ============================================
     // 状态变量 - DAO 国库
     // ============================================
     
-    uint256 public daoTreasury;
+    uint256 public daoTreasury;        // DAO国库 (BNB + 代币手续费)
     uint256 public constant PROPOSAL_THRESHOLD = 100 ether; // 100 BNB
     
     struct Proposal {
@@ -201,6 +213,8 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     event Unstaked(address indexed user, uint256 tokenId, uint256 reward);
     event StakingRewardClaimed(address indexed user, uint256 amount);
     event DividendClaimed(address indexed user, uint256 amountCirculating, uint256 amountSBT);
+    event NFTRoyaltyReceived(uint256 amount, uint256 toCirculating, uint256 toDAO);
+    event NFTRoyaltyClaimed(address indexed user, uint256 amount);
     event ProposalCreated(uint256 indexed proposalId, address indexed proposer, string description);
     event Voted(uint256 indexed proposalId, address indexed voter, bool support);
     event ProposalExecuted(uint256 indexed proposalId);
@@ -941,6 +955,26 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         currentBuilderPhase = _phase;
     }
     
+    /**
+     * @dev 设置老 NFT 合约的版税接收者为本合约
+     * 
+     * ⚠️ 重要步骤（必须按顺序执行）:
+     * 1. 先在老 NFT 合约调用 transferOwnership(MFACSystem合约地址)
+     * 2. 再调用本函数，触发版税接收者更新
+     * 3. 之后 NFT 在交易市场（如 OpenSea）的版税收入会自动打到本合约
+     * 
+     * 原理: 老合约的 setRoyalty 内部会调用 _setDefaultRoyalty(owner(), royaltyFraction)
+     *      此时 owner() 已经是本合约地址，所以版税接收者会自动设为本合约
+     */
+    function setNFTRoyaltyReceiver() external onlyOwner {
+        // 确认本合约已是老 NFT 合约的 owner
+        require(nftContract.owner() == address(this), "MFACSystem must be NFT contract owner first");
+        
+        // 调用老 NFT 合约的 setRoyalty(500) - 保持 5% 版税比例
+        // 由于本合约已是老合约的 owner，版税接收者会自动设为本合约地址
+        nftContract.setRoyalty(500);
+    }
+    
     function withdrawETH() external onlyOwner {
         uint256 balance = address(this).balance - daoTreasury;
         payable(owner()).transfer(balance);
@@ -976,7 +1010,9 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
             uint256 _circulatingDividendPool,
             uint256 _sbtDividendPool,
             uint256 _daoTreasury,
-            uint256 _superBuilderPoolRemaining
+            uint256 _superBuilderPoolRemaining,
+            uint256 _nftRoyaltyPool,
+            uint256 _totalNFTRoyaltyReceived
         ) 
     {
         return (
@@ -986,10 +1022,100 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
             circulatingNFTDividendPool,
             sbtNFTDividendPool,
             daoTreasury,
-            superBuilderPoolRemaining
+            superBuilderPoolRemaining,
+            nftRoyaltyPool,
+            totalNFTRoyaltyReceived
         );
     }
     
-    // 接收 BNB
-    receive() external payable {}
+    // ============================================
+    // NFT 版税收入处理
+    // ============================================
+    
+    /**
+     * @dev 接收 NFT 版税收入（BNB）
+     * 当 NFT 在交易市场（如 OpenSea）交易时，5% 版税会自动打到本合约
+     * 自动分配：50% 给流通NFT持有者，50% 进入DAO国库
+     */
+    receive() external payable {
+        if (msg.value > 0) {
+            // 分配版税收入
+            uint256 toCirculating = (msg.value * ROYALTY_TO_CIRCULATING) / 100;
+            uint256 toDAO = msg.value - toCirculating; // 确保没有舍入损失
+            
+            // 更新版税池
+            nftRoyaltyPool += toCirculating;
+            totalNFTRoyaltyReceived += msg.value;
+            
+            // 更新 DAO 国库
+            daoTreasury += toDAO;
+            
+            emit NFTRoyaltyReceived(msg.value, toCirculating, toDAO);
+        }
+    }
+    
+    /**
+     * @dev 流通 NFT 持有者领取 BNB 版税分红
+     * 只有持有流通NFT（tokenId > 500）的用户可以领取
+     * 按持有NFT数量平均分配
+     */
+    function claimNFTRoyalty() external nonReentrant {
+        require(nftRoyaltyPool > 0, "No royalty to claim");
+        
+        // 统计用户持有的流通NFT数量
+        uint256 circulatingBalance = 0;
+        uint256 maxTokenId = nftContract.MAX_TOKEN_ID();
+        uint256 airdropSupply = nftContract.AIRDROP_SUPPLY();
+        
+        for (uint256 i = airdropSupply + 1; i <= maxTokenId; i++) {
+            if (nftContract.balanceOf(msg.sender, i) > 0) {
+                circulatingBalance++;
+            }
+        }
+        
+        require(circulatingBalance > 0, "No circulating NFT");
+        
+        // 计算可领取金额
+        // 版税按流通NFT总数平均分配
+        uint256 totalCirculatingNFT = CIRCULATING_NFT_COUNT;
+        uint256 perNFT = nftRoyaltyPool / totalCirculatingNFT;
+        uint256 claimAmount = perNFT * circulatingBalance;
+        
+        require(claimAmount > 0, "Nothing to claim");
+        require(claimAmount <= nftRoyaltyPool, "Insufficient pool");
+        
+        // 更新池余额
+        nftRoyaltyPool -= claimAmount;
+        lastClaimedRoyalty[msg.sender] = block.timestamp;
+        
+        // 转账 BNB
+        payable(msg.sender).transfer(claimAmount);
+        
+        emit NFTRoyaltyClaimed(msg.sender, claimAmount);
+    }
+    
+    /**
+     * @dev 查询用户可领取的 NFT 版税金额
+     */
+    function getPendingNFTRoyalty(address user) external view returns (uint256) {
+        if (nftRoyaltyPool == 0) return 0;
+        
+        // 统计用户持有的流通NFT数量
+        uint256 circulatingBalance = 0;
+        uint256 maxTokenId = nftContract.MAX_TOKEN_ID();
+        uint256 airdropSupply = nftContract.AIRDROP_SUPPLY();
+        
+        for (uint256 i = airdropSupply + 1; i <= maxTokenId; i++) {
+            if (nftContract.balanceOf(user, i) > 0) {
+                circulatingBalance++;
+            }
+        }
+        
+        if (circulatingBalance == 0) return 0;
+        
+        uint256 totalCirculatingNFT = CIRCULATING_NFT_COUNT;
+        uint256 perNFT = nftRoyaltyPool / totalCirculatingNFT;
+        return perNFT * circulatingBalance;
+    }
 }
+

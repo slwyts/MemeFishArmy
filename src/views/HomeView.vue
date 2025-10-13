@@ -5,6 +5,12 @@ import { useContractStore } from '../store/contract'
 import { useWalletStore } from '../store/wallet'
 import { useWallet } from '../composables/useWallet'
 import NftGallery from '../components/NftGallery.vue'
+import PresaleSection from '../components/sections/PresaleSection.vue'
+import AirdropSection from '../components/sections/AirdropSection.vue'
+import StakingSection from '../components/sections/StakingSection.vue'
+import DividendSection from '../components/sections/DividendSection.vue'
+import DAOSection from '../components/sections/DAOSection.vue'
+import BuilderSection from '../components/sections/BuilderSection.vue'
 
 import { CheckCircleIcon, XCircleIcon, ShieldCheckIcon, CpuChipIcon, EyeIcon, PaintBrushIcon, CubeTransparentIcon } from '@heroicons/vue/24/solid'
 import { UserGroupIcon, CodeBracketIcon, PencilSquareIcon } from '@heroicons/vue/24/outline'
@@ -109,6 +115,14 @@ const txUrl = computed(() => contractStore.mintTxHash ? `https://bscscan.com/tx/
     </section>
     <NftGallery />
 
+    <!-- MFAC 生态系统功能区 -->
+    <PresaleSection />
+    <AirdropSection />
+    <StakingSection />
+    <DividendSection />
+    <DAOSection />
+    <BuilderSection />
+
     <section id="lore" class="container mx-auto px-4 text-center">
         <h2 class="text-4xl font-bold text-white tracking-tight">{{ t('lore.title') }}</h2>
         <div class="mt-8 max-w-3xl mx-auto space-y-4 text-lg text-gray-300 text-left leading-relaxed">
@@ -196,9 +210,16 @@ const txUrl = computed(() => contractStore.mintTxHash ? `https://bscscan.com/tx/
 </template>
 
 <style scoped>
-@import "tailwindcss";
-
 .feature-card, .team-member-card, .faq-item {
-  @apply bg-slate-900 opacity-50 p-8 rounded-xl border border-slate-700 transition duration-300 hover:border-amber-400/50 hover:shadow-2xl hover:shadow-amber-500/10;
+  background-color: rgba(15, 23, 42, 0.5);
+  padding: 2rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(51, 65, 85);
+  transition: all 0.3s;
+}
+
+.feature-card:hover, .team-member-card:hover, .faq-item:hover {
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(251, 191, 36, 0.1);
 }
 </style>

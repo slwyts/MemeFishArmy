@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Cog6ToothIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline'
+import { Cog6ToothIcon, MagnifyingGlassIcon, RocketLaunchIcon } from '@heroicons/vue/24/outline'
 import { RouterLink } from 'vue-router'
 
 const navItems = [
-  { name: '合约设置', to: '/admin/settings', icon: Cog6ToothIcon },
+  { name: 'MFAC 系统', to: '/admin/mfac-system', icon: RocketLaunchIcon },
+  { name: '老合约设置', to: '/admin/settings', icon: Cog6ToothIcon },
   { name: '数据查询', to: '/admin/queries', icon: MagnifyingGlassIcon },
 ]
 </script>
