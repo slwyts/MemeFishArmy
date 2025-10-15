@@ -86,6 +86,11 @@
   "admin": {
     "title": "管理员仪表盘",
     "subtitle": "管理您的 MemeFish Army 合约",
+    "nav": {
+      "mfac": "MFAC 管理",
+      "nft": "NFT 管理",
+      "queries": "数据查询"
+    },
     "whitelist_title": "白名单管理",
     "whitelist_single_placeholder": "输入单个地址 (0x...)",
     "whitelist_add": "添加",
@@ -93,7 +98,7 @@
     "whitelist_batch_placeholder": "输入多个地址，每行一个",
     "whitelist_batch_add": "批量添加",
     "whitelist_batch_remove": "批量移除",
-    "settings_title": "合约设置",
+    "settings_title": "NFT 合约设置",
     "settings_max_mints": "每用户最大铸造数",
     "settings_base_uri": "基础 URI",
     "settings_royalty": "版税 (基点, 例如 500 代表 5%)",

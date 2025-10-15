@@ -7,8 +7,6 @@ import { ArrowPathIcon } from '@heroicons/vue/24/outline'
 const { t } = useI18n()
 const contractStore = useContractStore()
 
-// ... (此处省略所有 <script> 部分的代码，和之前 AdminView.vue 的 <script> 完全一样) ...
-// Whitelist states
 const singleAddress = ref('')
 const batchAddresses = ref('')
 

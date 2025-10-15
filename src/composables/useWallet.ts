@@ -1,6 +1,12 @@
 import { ethers, type Contract } from 'ethers'
 import { useWalletStore } from '../store/wallet'
-import { memeFishArmyAddress, memeFishArmyAbi, desiredChainId } from '../contracts'
+import { 
+  memeFishArmyAddress, 
+  memeFishArmyAbi, 
+  mfacSystemAddress, 
+  mfacSystemAbi, 
+  desiredChainId 
+} from '../contracts'
 
 declare global {
   interface Window {
@@ -130,6 +136,10 @@ export function useWallet() {
     return new ethers.Contract(memeFishArmyAddress, memeFishArmyAbi, signerOrProvider)
   }
 
+  const getMFACSystemContract = (signerOrProvider: ethers.Signer | ethers.Provider): Contract => {
+    return new ethers.Contract(mfacSystemAddress, mfacSystemAbi, signerOrProvider)
+  }
+
   return {
     connect,
     disconnect,
@@ -137,5 +147,6 @@ export function useWallet() {
     getProvider,
     getSigner,
     getContract,
+    getMFACSystemContract,
   }
 }

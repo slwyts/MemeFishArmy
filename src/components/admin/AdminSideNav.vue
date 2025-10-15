@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Cog6ToothIcon, MagnifyingGlassIcon, RocketLaunchIcon } from '@heroicons/vue/24/outline'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const navItems = [
-  { name: 'MFAC 系统', to: '/admin/mfac-system', icon: RocketLaunchIcon },
-  { name: '老合约设置', to: '/admin/settings', icon: Cog6ToothIcon },
-  { name: '数据查询', to: '/admin/queries', icon: MagnifyingGlassIcon },
+  { name: t('admin.nav.mfac'), to: '/admin/mfac-system', icon: RocketLaunchIcon },
+  { name: t('admin.nav.nft'), to: '/admin/nft-management', icon: Cog6ToothIcon },
+  { name: t('admin.nav.queries'), to: '/admin/queries', icon: MagnifyingGlassIcon },
 ]
 </script>
 

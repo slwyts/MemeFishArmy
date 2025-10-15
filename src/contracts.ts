@@ -1084,7 +1084,7 @@ export const mfacSystemAbi = [
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "toDAO",
+				"name": "toProject",
 				"type": "uint256"
 			}
 		],
@@ -1122,6 +1122,50 @@ export const mfacSystemAbi = [
 			{
 				"indexed": true,
 				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "NFTRoyaltyClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "toCirculating",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "toProject",
+				"type": "uint256"
+			}
+		],
+		"name": "NFTRoyaltyReceived",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
 				"name": "previousOwner",
 				"type": "address"
 			},
@@ -1133,6 +1177,25 @@ export const mfacSystemAbi = [
 			}
 		],
 		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "proposalId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "passed",
+				"type": "bool"
+			}
+		],
+		"name": "ProposalClosed",
 		"type": "event"
 	},
 	{
@@ -1158,19 +1221,6 @@ export const mfacSystemAbi = [
 			}
 		],
 		"name": "ProposalCreated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "proposalId",
-				"type": "uint256"
-			}
-		],
-		"name": "ProposalExecuted",
 		"type": "event"
 	},
 	{
@@ -1424,7 +1474,20 @@ export const mfacSystemAbi = [
 	},
 	{
 		"inputs": [],
-		"name": "PROPOSAL_THRESHOLD",
+		"name": "ROYALTY_TO_CIRCULATING",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "ROYALTY_TO_DAO",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1670,8 +1733,45 @@ export const mfacSystemAbi = [
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address[]",
+				"name": "users",
+				"type": "address[]"
+			},
+			{
+				"internalType": "bool[]",
+				"name": "statuses",
+				"type": "bool[]"
+			}
+		],
+		"name": "batchUpdateWhitelist",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "buyFeePercent",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "circulatingNFTClaimedDays",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1709,8 +1809,32 @@ export const mfacSystemAbi = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "circulatingTokenIds",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "sbtTokenIds",
+				"type": "uint256[]"
+			}
+		],
 		"name": "claimDividend",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "circulatingTokenIds",
+				"type": "uint256[]"
+			}
+		],
+		"name": "claimNFTRoyalty",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -1732,19 +1856,22 @@ export const mfacSystemAbi = [
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "proposalId",
+				"type": "uint256"
+			}
+		],
+		"name": "closeProposal",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "string",
 				"name": "description",
 				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "target",
-				"type": "address"
 			}
 		],
 		"name": "createProposal",
@@ -1773,7 +1900,20 @@ export const mfacSystemAbi = [
 	},
 	{
 		"inputs": [],
-		"name": "daoTreasury",
+		"name": "daoTreasuryBNB",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "daoTreasuryMFAC",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1819,26 +1959,6 @@ export const mfacSystemAbi = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "emergencyWithdraw",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "proposalId",
-				"type": "uint256"
-			}
-		],
-		"name": "executeProposal",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1961,12 +2081,27 @@ export const mfacSystemAbi = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "_daoTreasury",
+				"name": "_daoTreasuryBNB",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_daoTreasuryMFAC",
 				"type": "uint256"
 			},
 			{
 				"internalType": "uint256",
 				"name": "_superBuilderPoolRemaining",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_nftRoyaltyPool",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_totalNFTRoyaltyReceived",
 				"type": "uint256"
 			}
 		],
@@ -1998,6 +2133,16 @@ export const mfacSystemAbi = [
 				"internalType": "address",
 				"name": "user",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "circulatingTokenIds",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "sbtTokenIds",
+				"type": "uint256[]"
 			}
 		],
 		"name": "getDividendBalance",
@@ -2011,6 +2156,146 @@ export const mfacSystemAbi = [
 				"internalType": "uint256",
 				"name": "sbtAmount",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getNFTMaxMintsPerUser",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "circulatingTokenIds",
+				"type": "uint256[]"
+			}
+		],
+		"name": "getPendingNFTRoyalty",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "proposalId",
+				"type": "uint256"
+			}
+		],
+		"name": "getProposal",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "proposer",
+				"type": "address"
+			},
+			{
+				"internalType": "string",
+				"name": "description",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "yesVotes",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "noVotes",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "endTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "closed",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "passed",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "offset",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "limit",
+				"type": "uint256"
+			}
+		],
+		"name": "getProposals",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "ids",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "address[]",
+				"name": "proposers",
+				"type": "address[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "yesVotes_",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "noVotes_",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "endTimes",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "bool[]",
+				"name": "closed_",
+				"type": "bool[]"
 			}
 		],
 		"stateMutability": "view",
@@ -2084,6 +2369,30 @@ export const mfacSystemAbi = [
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "topN",
+				"type": "uint256"
+			}
+		],
+		"name": "getTopStakers",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
 				"name": "user",
 				"type": "address"
@@ -2112,6 +2421,35 @@ export const mfacSystemAbi = [
 				"internalType": "struct MFACSystem.StakeInfo[]",
 				"name": "",
 				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "proposalId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "getUserVote",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "hasVoted_",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "votingPower",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -2264,8 +2602,27 @@ export const mfacSystemAbi = [
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "",
+				"name": "user",
 				"type": "address"
+			}
+		],
+		"name": "isWhitelisted",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"name": "lastClaimedDividendCirculating",
@@ -2282,12 +2639,31 @@ export const mfacSystemAbi = [
 	{
 		"inputs": [
 			{
-				"internalType": "address",
+				"internalType": "uint256",
 				"name": "",
-				"type": "address"
+				"type": "uint256"
 			}
 		],
 		"name": "lastClaimedDividendSBT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "lastClaimedRoyalty",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -2340,6 +2716,19 @@ export const mfacSystemAbi = [
 	{
 		"inputs": [],
 		"name": "nftPrice",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "nftRoyaltyPool",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -2455,16 +2844,6 @@ export const mfacSystemAbi = [
 			},
 			{
 				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "target",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
 				"name": "yesVotes",
 				"type": "uint256"
 			},
@@ -2480,7 +2859,7 @@ export const mfacSystemAbi = [
 			},
 			{
 				"internalType": "bool",
-				"name": "executed",
+				"name": "closed",
 				"type": "bool"
 			},
 			{
@@ -2696,12 +3075,51 @@ export const mfacSystemAbi = [
 	{
 		"inputs": [
 			{
+				"internalType": "string",
+				"name": "newURI",
+				"type": "string"
+			}
+		],
+		"name": "setNFTBaseURI",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newLimit",
+				"type": "uint256"
+			}
+		],
+		"name": "setNFTMaxMintsPerUser",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "uint256",
 				"name": "_price",
 				"type": "uint256"
 			}
 		],
 		"name": "setNFTPrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint96",
+				"name": "royaltyFraction",
+				"type": "uint96"
+			}
+		],
+		"name": "setNFTRoyalty",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -2759,6 +3177,25 @@ export const mfacSystemAbi = [
 				"internalType": "address",
 				"name": "",
 				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "stakingScore",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -2851,6 +3288,19 @@ export const mfacSystemAbi = [
 	{
 		"inputs": [],
 		"name": "totalDividendSBT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalNFTRoyaltyReceived",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -3006,8 +3456,37 @@ export const mfacSystemAbi = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "withdrawETH",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawBNB",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawMFAC",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

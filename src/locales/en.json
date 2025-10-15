@@ -86,6 +86,11 @@
   "admin": {
     "title": "Admin Dashboard",
     "subtitle": "Manage your MemeFish Army contract.",
+    "nav": {
+      "mfac": "MFAC Management",
+      "nft": "NFT Management",
+      "queries": "Data Queries"
+    },
     "whitelist_title": "Whitelist Management",
     "whitelist_single_placeholder": "Enter single address (0x...)",
     "whitelist_add": "Add",
@@ -93,7 +98,7 @@
     "whitelist_batch_placeholder": "Enter multiple addresses, one per line",
     "whitelist_batch_add": "Batch Add",
     "whitelist_batch_remove": "Batch Remove",
-    "settings_title": "Contract Settings",
+    "settings_title": "NFT Contract Settings",
     "settings_max_mints": "Max Mints Per User",
     "settings_base_uri": "Base URI",
     "settings_royalty": "Royalty (in BPS, e.g., 500 for 5%)",

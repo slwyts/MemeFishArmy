@@ -23,20 +23,21 @@ export const useContractStore = defineStore('contract', () => {
   const hasScanned = ref(false)
 
 
-  const { getProvider, getSigner, getContract } = useWallet()
+  const { getProvider, getSigner, getContract, getMFACSystemContract } = useWallet()
   const walletStore = useWalletStore()
 
   async function fetchContractData() {
     isLoading.value = true
     try {
       const provider = getProvider()
-      const contract = getContract(provider)
+      const nftContract = getContract(provider)
+      const mfacContract = getMFACSystemContract(provider)
 
       const [maxMints, owner, tokenOneUri, royaltyInfo] = await Promise.all([
-        contract.maxMintsPerUser(),
-        contract.owner(),
-        contract.uri(1),
-        contract.royaltyInfo(1, 10000)
+        mfacContract.getNFTMaxMintsPerUser(),
+        nftContract.owner(),
+        nftContract.uri(1),
+        nftContract.royaltyInfo(1, 10000)
       ])
 
       maxMintsPerUser.value = Number(maxMints)
@@ -69,12 +70,13 @@ export const useContractStore = defineStore('contract', () => {
 
     try {
       const provider = getProvider()
-      const contract = getContract(provider)
+      const nftContract = getContract(provider)
+      const mfacContract = getMFACSystemContract(provider)
       const address = walletStore.connectedAddress
 
       const [whitelisted, mintedCount] = await Promise.all([
-        contract.whitelist(address),
-        contract.userMintCount(address),
+        mfacContract.isWhitelisted(address),
+        nftContract.userMintCount(address),
       ])
 
       isWhitelisted.value = whitelisted
@@ -112,9 +114,9 @@ export const useContractStore = defineStore('contract', () => {
   async function scanForWhitelist() {
     try {
       const provider = getProvider()
-      const contract = getContract(provider)
-      const filter = contract.filters.WhitelistUpdated()
-      const events = await contract.queryFilter(filter)
+      const nftContract = getContract(provider)
+      const filter = nftContract.filters.WhitelistUpdated()
+      const events = await nftContract.queryFilter(filter)
 
       const currentWhitelist = new Map<string, boolean>()
       events.forEach((event: any) => {
@@ -206,8 +208,8 @@ export const useContractStore = defineStore('contract', () => {
 
   const adminAction = async (methodName: string, ...args: any[]) => {
     const signer = await getSigner()
-    const contractWithSigner = getContract(signer)
-    const tx = await contractWithSigner[methodName](...args)
+    const mfacContractWithSigner = getMFACSystemContract(signer)
+    const tx = await mfacContractWithSigner[methodName](...args)
     await tx.wait()
     await fetchContractData()
     hasScanned.value = false;
@@ -225,15 +227,15 @@ export const useContractStore = defineStore('contract', () => {
   }
 
   const setMaxMints = async (limit: number) => {
-    await adminAction('setMaxMintsPerUser', limit)
+    await adminAction('setNFTMaxMintsPerUser', limit)
   }
 
   const setBaseURI = async (uri: string) => {
-    await adminAction('setBaseURI', uri)
+    await adminAction('setNFTBaseURI', uri)
   }
 
   const setRoyalty = async (royaltyBps: number) => {
-    await adminAction('setRoyalty', royaltyBps)
+    await adminAction('setNFTRoyalty', royaltyBps)
   }
 
   return {

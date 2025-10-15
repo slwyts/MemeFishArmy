@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import AdminView from '../views/AdminView.vue'
-import SettingsView from '../views/admin/SettingsView.vue'
+import NFTManagementView from '../views/admin/NFTManagementView.vue'
 import QueriesView from '../views/admin/QueriesView.vue'
 import MFACSystemView from '../views/admin/MFACSystemView.vue'
 import { useWalletStore } from '../store/wallet'
@@ -69,14 +69,19 @@ const router = createRouter({
           component: MFACSystemView
         },
         {
-          path: 'settings',
-          name: 'admin-settings',
-          component: SettingsView
+          path: 'nft-management',
+          name: 'admin-nft-management',
+          component: NFTManagementView
         },
         {
           path: 'queries',
           name: 'admin-queries',
           component: QueriesView
+        },
+        // 保留旧路由，重定向到新路由
+        {
+          path: 'settings',
+          redirect: '/admin/nft-management'
         }
       ]
     }

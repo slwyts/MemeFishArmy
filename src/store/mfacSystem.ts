@@ -33,12 +33,10 @@ export interface Proposal {
   id: bigint
   proposer: string
   description: string
-  amount: bigint
-  target: string
   yesVotes: bigint
   noVotes: bigint
   endTime: bigint
-  executed: boolean
+  closed: boolean
   exists: boolean
 }
 
@@ -67,6 +65,9 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
     // NFT 预售
     nftPrice: 0n,
     presaleActive: false,
+    
+    // 手续费配置
+    feesEnabled: false,
     
     // 质押排名
     stakingRanking: [] as string[],
@@ -154,9 +155,10 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
           totalNFTRoyaltyReceived: stats[8],
         }
         
-        // 同时获取预售信息
+        // 同时获取预售信息和手续费状态
         this.nftPrice = await this.contract.nftPrice()
         this.presaleActive = await this.contract.presaleActive()
+        this.feesEnabled = await this.contract.feesEnabled()
         
         this.error = null
       } catch (err: any) {
@@ -427,13 +429,13 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
     },
 
     // 创建 DAO 提案
-    async createProposal(description: string, recipient: string, amount: bigint) {
+    async createProposal(description: string) {
       if (!this.contract) this.initContract()
       if (!this.contract) return
 
       this.loading = true
       try {
-        const tx = await this.contract.createProposal(description, recipient, amount)
+        const tx = await this.contract.createProposal(description)
         await tx.wait()
         await this.fetchProposals()
         this.error = null
@@ -462,12 +464,10 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
             id: i,
             proposer: proposal.proposer,
             description: proposal.description,
-            amount: proposal.amount,
-            target: proposal.recipient,
-            yesVotes: proposal.forVotes,
-            noVotes: proposal.againstVotes,
+            yesVotes: proposal.yesVotes,
+            noVotes: proposal.noVotes,
             endTime: proposal.endTime,
-            executed: proposal.executed,
+            closed: proposal.closed,
             exists: proposal.exists || true,
           })
         }
@@ -589,6 +589,235 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
         this.fetchDAOStatus(),
         tokenIds.length > 0 ? this.fetchClaimableAirdrop(tokenIds) : Promise.resolve(),
       ])
+    },
+
+    // ========================================
+    // 管理员方法
+    // ========================================
+
+    // 设置预售状态
+    async setPresaleActive(active: boolean) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setPresaleActive(active)
+        await tx.wait()
+        await this.fetchContractStats()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set presale active:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置 NFT 价格
+    async setNFTPrice(price: bigint) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setNFTPrice(price)
+        await tx.wait()
+        await this.fetchContractStats()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set NFT price:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 开启空投
+    async startAirdrop() {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.startAirdrop()
+        await tx.wait()
+        await this.fetchContractStats()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to start airdrop:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置 DEX Pair
+    async setDEXPair(pair: string, isPair: boolean) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setDEXPair(pair, isPair)
+        await tx.wait()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set DEX pair:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置免手续费地址
+    async setExcludedFromFee(account: string, excluded: boolean) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setExcludedFromFee(account, excluded)
+        await tx.wait()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set excluded from fee:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置手续费比例
+    async setFeePercents(buyFee: number, sellFee: number) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setFeePercents(buyFee, sellFee)
+        await tx.wait()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set fee percents:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置手续费开关
+    async setFeesEnabled(enabled: boolean) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setFeesEnabled(enabled)
+        await tx.wait()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set fees enabled:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置手续费分配比例
+    async setFeeDistribution(circulating: number, sbt: number, dao: number) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setFeeDistribution(circulating, sbt, dao)
+        await tx.wait()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set fee distribution:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 提取 MFAC 代币
+    async withdrawMFAC(to: string, amount: bigint) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.withdrawMFAC(to, amount)
+        await tx.wait()
+        await this.fetchContractStats()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to withdraw MFAC:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 提取 BNB
+    async withdrawBNB(to: string, amount: bigint) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.withdrawBNB(to, amount)
+        await tx.wait()
+        await this.fetchContractStats()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to withdraw BNB:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // 设置 NFT 版税（通过代理）
+    async setNFTRoyalty(royaltyFraction: number) {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      this.loading = true
+      try {
+        const tx = await this.contract.setNFTRoyalty(royaltyFraction)
+        await tx.wait()
+        this.error = null
+        return true
+      } catch (err: any) {
+        this.error = err.message
+        console.error('Failed to set NFT royalty:', err)
+        return false
+      } finally {
+        this.loading = false
+      }
     },
   },
 })
