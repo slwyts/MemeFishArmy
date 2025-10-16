@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 contract MemeFishArmy is ERC1155, Ownable, ERC2981 {
     using Strings for uint256;
 
-    // --- State Variables ---
     string public name;
     string private _baseURI;
     uint256 private _nextTokenId; 
@@ -21,27 +20,20 @@ contract MemeFishArmy is ERC1155, Ownable, ERC2981 {
     uint256 public constant AIRDROP_SUPPLY = 500;
     uint256 public constant MAX_TOKEN_ID = 5000;
 
-    // --- Events ---
     event WhitelistUpdated(address indexed user, bool added);
     event BaseURIUpdated(string newURI);
     event MaxMintsUpdated(uint256 newLimit);
     event RoyaltyUpdated(address indexed receiver, uint96 royaltyFraction);
 
-    // --- Constructor ---
     constructor()
         ERC1155("https://fishnft.okassets.uk/metadata/{id}.json")
-        Ownable(msg.sender) // The deployer is the initial owner
+        Ownable(msg.sender)
     {
-        name = "Meme Fish Army"; // Set the collection name
+        name = "Meme Fish Army";
         _baseURI = "https://fishnft.okassets.uk/metadata/";
         _nextTokenId = AIRDROP_SUPPLY + 1;
         maxMintsPerUser = 1;
-
-        // Set the default royalty to 5% (500 basis points).
-        // The royalty receiver is the contract owner.
         _setDefaultRoyalty(owner(), 500);
-
-        // Mint airdrop supply to the owner
         uint256[] memory ids = new uint256[](AIRDROP_SUPPLY);
         uint256[] memory amounts = new uint256[](AIRDROP_SUPPLY);
         for (uint256 i = 0; i < AIRDROP_SUPPLY; i++) {
@@ -51,7 +43,6 @@ contract MemeFishArmy is ERC1155, Ownable, ERC2981 {
         _mintBatch(msg.sender, ids, amounts, "");
     }
 
-    // --- URI Functions ---
     function uri(uint256 tokenId) public view override returns (string memory) {
         require(tokenId > 0 && tokenId <= MAX_TOKEN_ID, "ERC1155Metadata: URI query for nonexistent token");
         return bytes(_baseURI).length > 0 ? string(abi.encodePacked(_baseURI, tokenId.toString(), ".json")) : "";
@@ -62,25 +53,16 @@ contract MemeFishArmy is ERC1155, Ownable, ERC2981 {
         emit BaseURIUpdated(newURI);
     }
     
-    // --- Royalty Functions ---
-    /**
-     * @dev Sets the royalty information.
-     * @param royaltyFraction The royalty percentage in basis points (e.g., 500 for 5%).
-     */
     function setRoyalty(uint96 royaltyFraction) public onlyOwner {
         require(royaltyFraction <= 10000, "Royalty fraction cannot exceed 10000 basis points");
         _setDefaultRoyalty(owner(), royaltyFraction);
         emit RoyaltyUpdated(owner(), royaltyFraction);
     }
 
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155, ERC2981) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
-    // --- Minting Functions ---
     function mint() public {
         require(whitelist[msg.sender], "You are not on the whitelist");        
         uint256 tokenIdToMint = _nextTokenId;
@@ -92,7 +74,6 @@ contract MemeFishArmy is ERC1155, Ownable, ERC2981 {
         _mint(msg.sender, tokenIdToMint, 1, "");
     }
 
-    // --- Admin Functions ---
     function setMaxMintsPerUser(uint256 newLimit) public onlyOwner {
         require(newLimit > 0, "Limit must be greater than zero");
         maxMintsPerUser = newLimit;

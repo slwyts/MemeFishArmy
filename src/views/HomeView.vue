@@ -44,13 +44,18 @@ const mintButtonText = computed(() => {
 const isMintDisabled = computed(() => {
   if (!walletStore.isConnected) return false
   return contractStore.isMinting ||
-         !contractStore.isWhitelisted ||
          (contractStore.userMintCount >= contractStore.maxMintsPerUser && contractStore.maxMintsPerUser > 0)
 })
 
 const handleMintAction = () => {
   if (!walletStore.isConnected) {
     connect()
+  } else if (!contractStore.isWhitelisted) {
+    // 跳转到预售页面
+    const presaleSection = document.getElementById('presale')
+    if (presaleSection) {
+      presaleSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   } else {
     contractStore.handleMint()
   }

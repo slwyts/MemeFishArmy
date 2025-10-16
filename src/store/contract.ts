@@ -2,6 +2,7 @@
 
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { ethers } from 'ethers'
 import { useWallet } from '../composables/useWallet'
 import { useWalletStore } from './wallet'
 
@@ -31,10 +32,10 @@ export const useContractStore = defineStore('contract', () => {
     try {
       const provider = getProvider()
       const nftContract = getContract(provider)
-      const mfacContract = getMFACSystemContract(provider)
 
+      // 直接从 NFT 合约读取数据
       const [maxMints, owner, tokenOneUri, royaltyInfo] = await Promise.all([
-        mfacContract.getNFTMaxMintsPerUser(),
+        nftContract.maxMintsPerUser(),
         nftContract.owner(),
         nftContract.uri(1),
         nftContract.royaltyInfo(1, 10000)
@@ -206,10 +207,18 @@ export const useContractStore = defineStore('contract', () => {
       }
   }
 
-  const adminAction = async (methodName: string, ...args: any[]) => {
+  // NFT 合约代理调用（通过 MFAC 合约）
+  const proxyCallNFT = async (functionSignature: string, args: any[]) => {
     const signer = await getSigner()
     const mfacContractWithSigner = getMFACSystemContract(signer)
-    const tx = await mfacContractWithSigner[methodName](...args)
+    
+    // 编码函数调用
+    const iface = new ethers.Interface([`function ${functionSignature}`])
+    const functionName = functionSignature.split('(')[0]
+    const data = iface.encodeFunctionData(functionName, args)
+    
+    // 通过代理调用
+    const tx = await mfacContractWithSigner.proxyCallNFT(data)
     await tx.wait()
     await fetchContractData()
     hasScanned.value = false;
@@ -219,23 +228,23 @@ export const useContractStore = defineStore('contract', () => {
 
   const updateWhitelist = async (addresses: string[], statuses: boolean[]) => {
     if (addresses.length === 1) {
-      const action = statuses[0] ? 'addToWhitelist' : 'removeFromWhitelist'
-      await adminAction(action, addresses[0])
+      const functionName = statuses[0] ? 'addToWhitelist' : 'removeFromWhitelist'
+      await proxyCallNFT(`${functionName}(address)`, [addresses[0]])
     } else {
-      await adminAction('batchUpdateWhitelist', addresses, statuses)
+      await proxyCallNFT('batchUpdateWhitelist(address[],bool[])', [addresses, statuses])
     }
   }
 
   const setMaxMints = async (limit: number) => {
-    await adminAction('setNFTMaxMintsPerUser', limit)
+    await proxyCallNFT('setMaxMintsPerUser(uint256)', [limit])
   }
 
   const setBaseURI = async (uri: string) => {
-    await adminAction('setNFTBaseURI', uri)
+    await proxyCallNFT('setBaseURI(string)', [uri])
   }
 
   const setRoyalty = async (royaltyBps: number) => {
-    await adminAction('setNFTRoyalty', royaltyBps)
+    await proxyCallNFT('setRoyalty(uint96)', [royaltyBps])
   }
 
   return {

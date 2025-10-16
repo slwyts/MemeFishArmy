@@ -18,7 +18,10 @@
           <div class="grid grid-cols-3 gap-6 p-8 border-b border-slate-700">
             <div class="text-center">
               <div class="text-sm text-gray-400 mb-1">NFT 价格</div>
-              <div class="text-3xl font-bold text-green-400">{{ formatPrice }}</div>
+              <div class="text-3xl font-bold text-green-400">
+                <span v-if="formatPrice === '--'" class="animate-pulse">--</span>
+                <span v-else>{{ formatPrice }}</span>
+              </div>
               <div class="text-xs text-gray-500 mt-1">BNB</div>
             </div>
             
@@ -31,11 +34,11 @@
             <div class="text-center">
               <div class="text-sm text-gray-400 mb-1">预售状态</div>
               <div class="flex items-center justify-center">
-                <span v-if="presaleActive" class="px-4 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-bold border border-green-500/30">
-                  ✅ 进行中
+                <span v-if="isSoldOut" class="px-4 py-1 bg-red-500/20 text-red-400 rounded-full text-sm font-bold border border-red-500/30">
+                  🔴 已售罄
                 </span>
-                <span v-else class="px-4 py-1 bg-gray-500/20 text-gray-400 rounded-full text-sm font-bold border border-gray-500/30">
-                  ⏸️ 已暂停
+                <span v-else class="px-4 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-bold border border-green-500/30">
+                  ✅ 进行中
                 </span>
               </div>
             </div>
@@ -74,8 +77,11 @@
                 <span v-else-if="!isConnected">
                   连接钱包购买
                 </span>
-                <span v-else-if="!presaleActive">
-                  预售未开始
+                <span v-else-if="hasPurchased">
+                  ✅ 您已购买过NFT
+                </span>
+                <span v-else-if="isSoldOut">
+                  售罄
                 </span>
                 <span v-else>
                   购买 NFT ({{ formatPrice }} BNB)
@@ -129,7 +135,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMFACSystemStore } from '@/store/mfacSystem'
 import { useWalletStore } from '@/store/wallet'
@@ -145,21 +151,28 @@ const successMessage = ref('')
 const errorMessage = ref('')
 
 const isConnected = computed(() => walletStore.isConnected)
-const presaleActive = computed(() => mfacStore.presaleActive)
 const nftsSold = computed(() => Number(mfacStore.stats?.nftsSold || 0))
+const hasPurchased = computed(() => mfacStore.hasPurchased)
+const isSoldOut = computed(() => nftsSold.value >= 4500)
 
-const formatPrice = computed(() => {
-  if (!mfacStore.nftPrice) return '1.0'
-  return (Number(mfacStore.nftPrice) / 1e18).toFixed(1)
-})
+// NFT价格固定为1 BNB
+const formatPrice = '1.0'
 
 const canPurchase = computed(() => {
-  return isConnected.value && presaleActive.value && !purchasing.value
+  return isConnected.value && 
+         !purchasing.value && 
+         !hasPurchased.value && 
+         !isSoldOut.value
 })
 
 const handlePurchase = async () => {
   if (!isConnected.value) {
     // 触发钱包连接
+    return
+  }
+
+  if (hasPurchased.value) {
+    errorMessage.value = '您已经购买过NFT，每个地址只能购买一次'
     return
   }
 
@@ -198,6 +211,16 @@ onMounted(async () => {
   if (walletStore.isConnected) {
     await mfacStore.initContract()
     await mfacStore.fetchContractStats()
+    await mfacStore.checkHasPurchased() // 检查是否已购买
+  }
+})
+
+// 监听钱包连接状态
+watch(() => walletStore.isConnected, async (newVal) => {
+  if (newVal) {
+    await mfacStore.initContract()
+    await mfacStore.fetchContractStats()
+    await mfacStore.checkHasPurchased()
   }
 })
 </script>

@@ -1,91 +1,29 @@
 <template>
   <div class="space-y-8">
-    <!-- 重要提示：权限转移和版税设置 -->
-    <div class="bg-gradient-to-r from-red-500/20 to-orange-500/20 backdrop-blur-sm p-6 rounded-2xl border-2 border-red-500/50">
-      <div class="flex items-start space-x-4">
-        <div class="text-4xl">⚠️</div>
-        <div class="flex-1">
-          <h3 class="text-xl font-bold text-red-400 mb-2">重要：合约权限配置（必须按顺序执行）</h3>
-          <div class="space-y-2 text-sm text-gray-300">
-            <p class="font-semibold">部署 MFACSystem 后的配置步骤：</p>
-            <ol class="list-decimal list-inside space-y-2 ml-4">
-              <li>
-                <strong class="text-yellow-400">步骤 1：转移 NFT 合约所有权</strong><br/>
-                <span class="ml-6">在老 NFT 合约调用 <code class="bg-slate-800 px-2 py-0.5 rounded text-cyan-400">transferOwnership(MFACSystem合约地址)</code></span><br/>
-                <span class="ml-6 text-gray-400">→ 这样 MFACSystem 才能调用 NFT 合约的管理员功能</span>
-              </li>
-              <li>
-                <strong class="text-yellow-400">步骤 2：设置 NFT 版税接收者</strong><br/>
-                <span class="ml-6">在本页面点击下方 "🎨 设置 NFT 版税" 按钮</span><br/>
-                <span class="ml-6 text-gray-400">→ NFT 交易市场的版税会打到 MFACSystem 合约</span>
-              </li>
-              <li>
-                <strong class="text-green-400">完成配置</strong><br/>
-                <span class="ml-6 text-gray-400">→ 所有功能通过本页面统一管理</span>
-              </li>
-            </ol>
-            <div class="mt-4 pt-4 border-t border-slate-600 space-y-1">
-              <p class="text-yellow-400">
-                ⚡ NFT 合约: <code class="bg-slate-800 px-2 py-0.5 rounded">{{ nftContractAddress }}</code>
-              </p>
-              <p class="text-green-400">
-                ✅ MFAC 合约: <code class="bg-slate-800 px-2 py-0.5 rounded">{{ mfacSystemAddress }}</code>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 池子余额统计 -->
-    <div class="bg-slate-900/80 backdrop-blur-sm p-8 rounded-2xl border border-slate-700">
-      <h2 class="text-2xl font-bold text-white mb-6">📊 系统资金池统计</h2>
+    <!-- 核心数据概览 -->
+    <div class="bg-slate-900/80 backdrop-blur-sm p-6 rounded-2xl border border-slate-700">
+      <h2 class="text-xl font-bold text-white mb-4">📊 核心数据</h2>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div class="p-4 bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">质押池</div>
-          <div class="text-2xl font-bold text-white">{{ formatMFAC(stats?.stakingPoolRemaining) }}</div>
-          <div class="text-xs text-gray-400">MFAC</div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="p-4 bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border border-emerald-500/30 rounded-xl">
+          <div class="text-xs text-gray-400 mb-1">NFT已售</div>
+          <div class="text-2xl font-bold text-white">{{ stats?.nftsSold?.toString() || '0' }}</div>
+          <div class="text-xs text-gray-500">/ 4500</div>
         </div>
         <div class="p-4 bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">流通NFT分红</div>
-          <div class="text-2xl font-bold text-white">{{ formatMFAC(stats?.circulatingDividendPool) }}</div>
-          <div class="text-xs text-gray-400">MFAC</div>
-        </div>
-        <div class="p-4 bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">SBT分红</div>
-          <div class="text-2xl font-bold text-white">{{ formatMFAC(stats?.sbtDividendPool) }}</div>
-          <div class="text-xs text-gray-400">MFAC</div>
-        </div>
-        <div class="p-4 bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border border-yellow-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">DAO国库</div>
-          <div class="text-2xl font-bold text-white">{{ formatMFAC(stats?.daoTreasury) }}</div>
-          <div class="text-xs text-gray-400">MFAC</div>
-        </div>
-        <div class="p-4 bg-gradient-to-br from-orange-900/30 to-orange-800/20 border border-orange-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">Builder池</div>
-          <div class="text-2xl font-bold text-white">{{ formatMFAC(stats?.superBuilderPoolRemaining) }}</div>
-          <div class="text-xs text-gray-400">MFAC</div>
-        </div>
-        <div class="p-4 bg-gradient-to-br from-pink-900/30 to-pink-800/20 border border-pink-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">💎 NFT版税池</div>
-          <div class="text-2xl font-bold text-white">{{ formatBNB(stats?.nftRoyaltyPool) }}</div>
-          <div class="text-xs text-gray-400">BNB</div>
-        </div>
-        <div class="p-4 bg-gradient-to-br from-indigo-900/30 to-indigo-800/20 border border-indigo-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">📈 累计版税</div>
-          <div class="text-2xl font-bold text-white">{{ formatBNB(stats?.totalNFTRoyaltyReceived) }}</div>
-          <div class="text-xs text-gray-400">BNB</div>
+          <div class="text-xs text-gray-400 mb-1">空投状态</div>
+          <div class="text-lg font-bold text-white">{{ airdropStarted ? '进行中' : '未开始' }}</div>
+          <div class="text-xs text-gray-500">{{ airdropStarted ? `剩余${airdropDaysRemaining}天` : '待首次领取' }}</div>
         </div>
         <div class="p-4 bg-gradient-to-br from-slate-900/30 to-slate-800/20 border border-slate-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">合约余额</div>
-          <div class="text-2xl font-bold text-white">{{ formatMFAC(contractBalance) }}</div>
-          <div class="text-xs text-gray-400">MFAC</div>
+          <div class="text-xs text-gray-400 mb-1">MFAC 余额</div>
+          <div class="text-lg font-bold text-white">{{ formatMFAC(contractBalance) }}</div>
+          <div class="text-xs text-gray-500">代币</div>
         </div>
-        <div class="p-4 bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 border border-emerald-500/30 rounded-xl">
-          <div class="text-sm text-gray-300 mb-1">NFT已售</div>
-          <div class="text-2xl font-bold text-white">{{ stats?.nftsSold?.toString() || '0' }}</div>
-          <div class="text-xs text-gray-400">/ 4500</div>
+        <div class="p-4 bg-gradient-to-br from-purple-900/30 to-purple-800/20 border border-purple-500/30 rounded-xl">
+          <div class="text-xs text-gray-400 mb-1">BNB 余额</div>
+          <div class="text-lg font-bold text-white">{{ bnbBalance }}</div>
+          <div class="text-xs text-gray-500">主币</div>
         </div>
       </div>
     </div>
@@ -109,118 +47,11 @@
       </div>
 
       <div class="p-8">
-        <!-- NFT 预售管理 -->
-        <div v-show="activeTab === 'presale'">
-          <h3 class="text-xl font-bold text-white mb-6">NFT 预售管理</h3>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- 预售状态 -->
-            <div class="bg-slate-800/50 p-6 rounded-xl">
-              <label class="block text-sm font-semibold text-gray-300 mb-2">预售状态</label>
-              <div class="flex items-center justify-between">
-                <span class="text-2xl font-bold" :class="presaleActive ? 'text-green-400' : 'text-red-400'">
-                  {{ presaleActive ? '✅ 进行中' : '❌ 已关闭' }}
-                </span>
-                <button
-                  @click="togglePresale"
-                  :disabled="loading.presale"
-                  class="px-6 py-2 font-bold rounded-lg transition-colors disabled:bg-gray-500"
-                  :class="presaleActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'"
-                >
-                  <i v-if="loading.presale" class="fa fa-spinner fa-spin mr-2"></i>
-                  {{ presaleActive ? '关闭预售' : '开启预售' }}
-                </button>
-              </div>
-            </div>
-
-            <!-- NFT 价格 -->
-            <div class="bg-slate-800/50 p-6 rounded-xl">
-              <label class="block text-sm font-semibold text-gray-300 mb-2">NFT 价格</label>
-              <div class="flex items-center space-x-3">
-                <input
-                  v-model="nftPriceInput"
-                  type="number"
-                  step="0.01"
-                  placeholder="1.0"
-                  class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-cyan-500 focus:outline-none"
-                />
-                <span class="text-gray-400">BNB</span>
-                <button
-                  @click="updateNFTPrice"
-                  :disabled="loading.nftPrice"
-                  class="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg transition-colors disabled:bg-gray-500"
-                >
-                  <i v-if="loading.nftPrice" class="fa fa-spinner fa-spin mr-2"></i>
-                  更新
-                </button>
-              </div>
-              <p class="text-xs text-gray-400 mt-2">当前价格: {{ formatBNB(nftPrice) }} BNB</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 空投管理 -->
-        <div v-show="activeTab === 'airdrop'">
-          <h3 class="text-xl font-bold text-white mb-6">空投管理</h3>
-          <div class="bg-slate-800/50 p-6 rounded-xl">
-            <div class="flex items-center justify-between mb-4">
-              <div>
-                <div class="font-semibold text-white text-lg">空投状态</div>
-                <div class="text-sm text-gray-400">
-                  {{ airdropStarted ? '已开启' : '未开启' }}
-                  <span v-if="airdropStarted" class="ml-2">
-                    | 剩余 {{ airdropDaysRemaining }} 天
-                  </span>
-                </div>
-              </div>
-              <button
-                v-if="!airdropStarted"
-                @click="handleStartAirdrop"
-                :disabled="loading.airdrop"
-                class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors disabled:bg-gray-500"
-              >
-                <i v-if="loading.airdrop" class="fa fa-spinner fa-spin mr-2"></i>
-                🎁 开启空投
-              </button>
-              <span v-else class="text-green-400 font-bold text-lg">✓ 已开启</span>
-            </div>
-            
-            <div v-if="airdropStarted" class="grid grid-cols-2 gap-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
-              <div>
-                <div class="text-sm text-blue-300">开始时间</div>
-                <div class="font-mono text-white">{{ formatTimestamp(stats?.airdropStartTime) }}</div>
-              </div>
-              <div>
-                <div class="text-sm text-blue-300">每NFT每天</div>
-                <div class="font-bold text-white">1,000 MFAC</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- 手续费配置 -->
         <div v-show="activeTab === 'fees'">
           <h3 class="text-xl font-bold text-white mb-6">交易手续费配置</h3>
           
           <div class="space-y-6">
-            <!-- 手续费开关 -->
-            <div class="bg-slate-800/50 p-6 rounded-xl">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-semibold text-white">手续费开关</div>
-                  <div class="text-sm text-gray-400">买入1% / 卖出2%</div>
-                </div>
-                <button
-                  @click="toggleFees"
-                  :disabled="loading.feesEnabled"
-                  class="px-6 py-2 font-bold rounded-lg transition-colors disabled:bg-gray-500"
-                  :class="feesEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'"
-                >
-                  <i v-if="loading.feesEnabled" class="fa fa-spinner fa-spin mr-2"></i>
-                  {{ feesEnabled ? '已开启' : '已关闭' }}
-                </button>
-              </div>
-            </div>
-
             <!-- 手续费比例 -->
             <div class="bg-slate-800/50 p-6 rounded-xl">
               <label class="block text-sm font-semibold text-gray-300 mb-4">手续费比例</label>
@@ -377,54 +208,6 @@
           </div>
         </div>
 
-        <!-- NFT 配置代理 -->
-        <div v-show="activeTab === 'nft'">
-          <h3 class="text-xl font-bold text-white mb-6">NFT 合约代理管理</h3>
-          <div class="space-y-6">
-            <!-- NFT 版税设置 -->
-            <div class="bg-gradient-to-r from-purple-500/20 to-pink-500/20 p-6 rounded-xl border-2 border-purple-500/50">
-              <div class="flex items-center justify-between">
-                <div>
-                  <div class="font-semibold text-purple-300 text-lg">🎨 NFT 版税设置</div>
-                  <div class="text-sm text-gray-300 mt-1">
-                    设置 NFT 版税比例（单位：基点，500 = 5%）
-                  </div>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <input
-                    v-model.number="royaltyInput"
-                    type="number"
-                    min="0"
-                    max="10000"
-                    placeholder="500"
-                    class="w-24 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                  />
-                  <button
-                    @click="updateNFTRoyalty"
-                    :disabled="loading.nftRoyalty"
-                    class="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-lg transition-all disabled:opacity-50"
-                  >
-                    <i v-if="loading.nftRoyalty" class="fa fa-spinner fa-spin mr-2"></i>
-                    更新版税
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 白名单管理 -->
-            <div class="bg-slate-800/50 p-6 rounded-xl">
-              <label class="block text-sm font-semibold text-gray-300 mb-4">白名单管理（通过 MFAC 代理）</label>
-              <p class="text-xs text-gray-400 mb-4">⚠️ 白名单管理已移至 "NFT 管理" 页面</p>
-              <router-link 
-                to="/admin/nft-management"
-                class="inline-block px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold rounded-lg transition-colors"
-              >
-                前往 NFT 管理页面 →
-              </router-link>
-            </div>
-          </div>
-        </div>
-
         <!-- 资金提取 -->
         <div v-show="activeTab === 'withdraw'">
           <h3 class="text-xl font-bold text-white mb-6">资金提取</h3>
@@ -519,29 +302,25 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useMFACSystemStore } from '@/store/mfacSystem'
-import { useWalletStore } from '@/store/wallet'
 import { ethers } from 'ethers'
+import { useMFACSystemStore } from '../../store/mfacSystem'
+import { useWalletStore } from '../../store/wallet'
+import { useWallet } from '../../composables/useWallet'
 
 const mfacStore = useMFACSystemStore()
 const walletStore = useWalletStore()
 
 // Refs
-const activeTab = ref('presale')
-const nftContractAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS
-const mfacSystemAddress = import.meta.env.VITE_MFAC_SYSTEM_CONTRACT_ADDRESS
+const activeTab = ref('fees')
+const bnbBalance = ref('0')
 
 const tabs = [
-  { id: 'presale', name: '预售管理', icon: '🎫' },
-  { id: 'airdrop', name: '空投管理', icon: '🎁' },
   { id: 'fees', name: '手续费配置', icon: '💰' },
   { id: 'dex', name: 'DEX & 白名单', icon: '🔄' },
-  { id: 'nft', name: 'NFT 配置', icon: '🎨' },
   { id: 'withdraw', name: '资金提取', icon: '💸' },
 ]
 
 // Form inputs
-const nftPriceInput = ref('1.0')
 const buyFeeInput = ref(1)
 const sellFeeInput = ref(2)
 const feeDistribution = ref({
@@ -551,21 +330,15 @@ const feeDistribution = ref({
 })
 const dexPairInput = ref('')
 const excludedAddressInput = ref('')
-const royaltyInput = ref(500)
 const withdrawMFAC = ref({ to: '', amount: '' })
 const withdrawBNB = ref({ to: '', amount: '' })
 
 // Loading states
 const loading = ref({
-  presale: false,
-  nftPrice: false,
-  airdrop: false,
-  feesEnabled: false,
   feePercents: false,
   feeDistribution: false,
   dexPair: false,
   excludedFee: false,
-  nftRoyalty: false,
   withdrawMFAC: false,
   withdrawBNB: false,
 })
@@ -577,9 +350,6 @@ const errorMessage = ref('')
 // Computed
 const stats = computed(() => mfacStore.stats)
 const contractBalance = computed(() => mfacStore.userTokenBalance) // 需要获取合约地址的余额
-const presaleActive = computed(() => mfacStore.presaleActive)
-const nftPrice = computed(() => mfacStore.nftPrice)
-const feesEnabled = computed(() => mfacStore.feesEnabled)
 const airdropStarted = computed(() => mfacStore.airdropStarted)
 const airdropDaysRemaining = computed(() => mfacStore.airdropDaysRemaining)
 const feeDistributionTotal = computed(() => 
@@ -590,16 +360,6 @@ const feeDistributionTotal = computed(() =>
 const formatMFAC = (amount: bigint | undefined): string => {
   if (!amount) return '0'
   return (Number(amount) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-}
-
-const formatBNB = (amount: bigint | undefined): string => {
-  if (!amount) return '0'
-  return (Number(amount) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
-}
-
-const formatTimestamp = (timestamp: bigint | undefined): string => {
-  if (!timestamp) return '--'
-  return new Date(Number(timestamp) * 1000).toLocaleString('zh-CN')
 }
 
 const clearMessages = () => {
@@ -621,72 +381,21 @@ const showError = (msg: string) => {
   clearMessages()
 }
 
+// 获取合约 BNB 余额
+const fetchBNBBalance = async () => {
+  try {
+    const { getProvider } = useWallet()
+    const provider = getProvider()
+    const mfacAddress = import.meta.env.VITE_MFAC_SYSTEM_CONTRACT_ADDRESS
+    const balance = await provider.getBalance(mfacAddress)
+    bnbBalance.value = (Number(balance) / 1e18).toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+  } catch (err) {
+    console.error('Failed to fetch BNB balance:', err)
+    bnbBalance.value = '0'
+  }
+}
+
 // Actions
-const togglePresale = async () => {
-  loading.value.presale = true
-  try {
-    const result = await mfacStore.setPresaleActive(!presaleActive.value)
-    if (result) {
-      showSuccess(`预售已${presaleActive.value ? '开启' : '关闭'}`)
-    } else {
-      showError('操作失败')
-    }
-  } catch (err: any) {
-    showError(err.message || '操作失败')
-  } finally {
-    loading.value.presale = false
-  }
-}
-
-const updateNFTPrice = async () => {
-  loading.value.nftPrice = true
-  try {
-    const price = ethers.parseEther(nftPriceInput.value)
-    const result = await mfacStore.setNFTPrice(price)
-    if (result) {
-      showSuccess(`NFT 价格已更新为 ${nftPriceInput.value} BNB`)
-    } else {
-      showError('更新失败')
-    }
-  } catch (err: any) {
-    showError(err.message || '更新失败')
-  } finally {
-    loading.value.nftPrice = false
-  }
-}
-
-const handleStartAirdrop = async () => {
-  loading.value.airdrop = true
-  try {
-    const result = await mfacStore.startAirdrop()
-    if (result) {
-      showSuccess('✓ 空投已成功开启！')
-    } else {
-      showError('开启失败')
-    }
-  } catch (err: any) {
-    showError(err.message || '开启失败')
-  } finally {
-    loading.value.airdrop = false
-  }
-}
-
-const toggleFees = async () => {
-  loading.value.feesEnabled = true
-  try {
-    const result = await mfacStore.setFeesEnabled(!feesEnabled.value)
-    if (result) {
-      showSuccess(`手续费已${feesEnabled.value ? '开启' : '关闭'}`)
-    } else {
-      showError('操作失败')
-    }
-  } catch (err: any) {
-    showError(err.message || '操作失败')
-  } finally {
-    loading.value.feesEnabled = false
-  }
-}
-
 const updateFeePercents = async () => {
   loading.value.feePercents = true
   try {
@@ -767,26 +476,6 @@ const setExcludedFromFee = async (excluded: boolean) => {
   }
 }
 
-const updateNFTRoyalty = async () => {
-  loading.value.nftRoyalty = true
-  try {
-    const result = await mfacStore.setNFTRoyalty(royaltyInput.value)
-    if (result) {
-      showSuccess(`NFT 版税已更新为 ${royaltyInput.value / 100}%`)
-    } else {
-      showError('更新失败')
-    }
-  } catch (err: any) {
-    if (err.message.includes('MFACSystem must be NFT contract owner first')) {
-      showError('❌ 失败：请先在 NFT 合约执行 transferOwnership(MFACSystem地址)')
-    } else {
-      showError(err.message || '更新失败')
-    }
-  } finally {
-    loading.value.nftRoyalty = false
-  }
-}
-
 const handleWithdrawMFAC = async () => {
   if (!withdrawMFAC.value.to || !ethers.isAddress(withdrawMFAC.value.to)) {
     showError('请输入有效的接收地址')
@@ -845,6 +534,7 @@ onMounted(async () => {
   if (walletStore.isConnected) {
     await mfacStore.initContract()
     await mfacStore.fetchContractStats()
+    await fetchBNBBalance()
   }
 })
 </script>

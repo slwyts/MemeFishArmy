@@ -25,7 +25,7 @@
       "status_connect_prompt": "Connect your wallet to verify eligibility.",
       "button_connect": "Connect Wallet",
       "button_minting": "Minting...",
-      "button_not_whitelisted": "Not on Whitelist",
+      "button_not_whitelisted": "Go to Presale",
       "button_limit_reached": "Limit Reached",
       "button_mint_now": "Mint Now",
       "feedback_sending": "Transaction sent, awaiting confirmation...",

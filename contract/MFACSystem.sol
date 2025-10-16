@@ -6,76 +6,44 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 interface IMemeFishNFT {
-    function addToWhitelist(address user) external;
-    function removeFromWhitelist(address user) external;
-    function batchUpdateWhitelist(address[] calldata users, bool[] calldata statuses) external;
-    function whitelist(address user) external view returns (bool);
     function balanceOf(address account, uint256 id) external view returns (uint256);
     function AIRDROP_SUPPLY() external view returns (uint256);
     function MAX_TOKEN_ID() external view returns (uint256);
-    function setRoyalty(uint96 royaltyFraction) external;
-    function setBaseURI(string memory newURI) external;
-    function setMaxMintsPerUser(uint256 newLimit) external;
-    function owner() external view returns (address);
-    function maxMintsPerUser() external view returns (uint256);
 }
 
 contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
-    
-    IMemeFishNFT public nftContract;
-    
-    // 代币总量相关
-    uint256 public constant TOTAL_SUPPLY = 1_000_000_000 * 10**18; // 10亿
-    
-    // 交易手续费
-    uint256 public buyFeePercent = 1;  // 买入手续费 1%
-    uint256 public sellFeePercent = 2; // 卖出手续费 2%
-    bool public feesEnabled = true;
-    
-    // 手续费分配比例 (总计100%)
-    uint256 public feeToCirculatingNFT = 30; // 流通NFT持有者 30%
-    uint256 public feeToSBTNFT = 20;         // SBT NFT持有者 20%
-    uint256 public feeToDAO = 50;            // DAO国库 50%
-    
-    // 免手续费地址
+    IMemeFishNFT private nftContract;
+    uint256 private buyFeePercent = 1;
+    uint256 private sellFeePercent = 2;
+    bool private constant FEES_ENABLED = true; // 手续费永久开启
+    uint256 private feeToCirculatingNFT = 30;
+    uint256 private feeToSBTNFT = 20;
+    uint256 private feeToDAO = 50;
     mapping(address => bool) public isExcludedFromFee;
-    
-    // DEX 配置 (用于判断买卖方向)
     mapping(address => bool) public isDEXPair;
-    
-    // ============================================
-    // 状态变量 - NFT 预售
-    // ============================================
-    
-    uint256 public constant SBT_NFT_COUNT = 4500;
-    uint256 public constant CIRCULATING_NFT_COUNT = 500;
-    uint256 public nftPrice = 1 ether; // 1 BNB per NFT
-    uint256 public nftsSold = 0;
-    bool public presaleActive = true;
+    uint256 private constant SBT_NFT_COUNT = 4500;
+    uint256 private constant CIRCULATING_NFT_COUNT = 500;
+    uint256 private constant NFT_PRICE = 1 ether; // 固定价格 1 BNB
+    uint256 private nftsSold = 0;
     
     // NFT 预售收入的 5% 进入 DAO 国库
-    uint256 public presaleDaoPercent = 5;
+    uint256 private presaleDaoPercent = 5;
     
-    // ============================================
-    // 状态变量 - 空投系统
-    // ============================================
+    uint256 private constant AIRDROP_DURATION = 100 days;
+    uint256 private constant AIRDROP_PER_NFT_PER_DAY = 1000 * 10**18; // 1000 MFAC/天
+    uint256 private constant SBT_AIRDROP_POOL = 450_000_000 * 10**18; // 4.5亿
+    uint256 private constant CIRCULATING_AIRDROP_POOL = 50_000_000 * 10**18; // 5000万
+    uint256 private airdropStartTime; // 第一次领取时自动设置
+    mapping(uint256 => mapping(uint256 => bool)) private airdropClaimed;
+    mapping(uint256 => mapping(address => bool)) private hasOwnedToken;
+    mapping(uint256 => uint256) private circulatingNFTClaimedDays;
     
-    uint256 public constant AIRDROP_DURATION = 100 days;
-    uint256 public constant AIRDROP_PER_NFT_PER_DAY = 1000 * 10**18; // 1000 MFAC/天
-    uint256 public constant SBT_AIRDROP_POOL = 450_000_000 * 10**18; // 4.5亿
-    uint256 public constant CIRCULATING_AIRDROP_POOL = 50_000_000 * 10**18; // 5000万
-    uint256 public airdropStartTime;
-    bool public airdropStarted = false;
-    mapping(uint256 => mapping(uint256 => bool)) public airdropClaimed;
-    mapping(uint256 => mapping(address => bool)) public hasOwnedToken;
-    mapping(uint256 => uint256) public circulatingNFTClaimedDays;
+    uint256 private constant STAKING_POOL = 50_000_000 * 10**18; // 5000万
+    uint256 private constant BASE_DAILY_REWARD = 500 * 10**18; // 500 MFAC/天
+    uint256 private constant WEIGHT_MULTIPLIER = 110; // 1.1倍 = 110/100
+    uint256 private constant WEIGHT_PERIOD = 30 days;
     
-    uint256 public constant STAKING_POOL = 50_000_000 * 10**18; // 5000万
-    uint256 public constant BASE_DAILY_REWARD = 500 * 10**18; // 500 MFAC/天
-    uint256 public constant WEIGHT_MULTIPLIER = 110; // 1.1倍 = 110/100
-    uint256 public constant WEIGHT_PERIOD = 30 days;
-    
-    uint256 public stakingPoolRemaining = STAKING_POOL;
+    uint256 private stakingPoolRemaining = STAKING_POOL;
     
     struct StakeInfo {
         uint256 tokenId;
@@ -84,44 +52,44 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     }
     
     // user => StakeInfo[]
-    mapping(address => StakeInfo[]) public userStakes;
+    mapping(address => StakeInfo[]) private userStakes;
     
     // tokenId => isStaked
-    mapping(uint256 => bool) public isTokenStaked;
+    mapping(uint256 => bool) private isTokenStaked;
     
     // tokenId => staker address
-    mapping(uint256 => address) public tokenStaker;
+    mapping(uint256 => address) private tokenStaker;
     
     // 质押排名 (用于 DAO 守护者资格)
-    address[] public stakingRanking;
+    address[] private stakingRanking;
     
     // 用户质押分数 (基于质押时长 * NFT数量)
-    mapping(address => uint256) public stakingScore;
+    mapping(address => uint256) private stakingScore;
     
     // ============================================
     // 状态变量 - 分红系统
     // ============================================
     
     // 代币手续费分红池 (MFAC 代币)
-    uint256 public circulatingNFTDividendPool;  // 流通NFT代币分红
-    uint256 public sbtNFTDividendPool;          // SBT代币分红
+    uint256 private circulatingNFTDividendPool;  // 流通NFT代币分红
+    uint256 private sbtNFTDividendPool;          // SBT代币分红
     
     // NFT 版税分红池 (BNB)
-    uint256 public nftRoyaltyPool;
-    uint256 public totalNFTRoyaltyReceived;
+    uint256 private nftRoyaltyPool;
+    uint256 private totalNFTRoyaltyReceived;
 
-    mapping(uint256 => uint256) public lastClaimedDividendCirculating;
-    mapping(uint256 => uint256) public lastClaimedDividendSBT;
-    mapping(uint256 => uint256) public lastClaimedRoyalty;
+    mapping(uint256 => uint256) private lastClaimedDividendCirculating;
+    mapping(uint256 => uint256) private lastClaimedDividendSBT;
+    mapping(uint256 => uint256) private lastClaimedRoyalty;
     
-    uint256 public totalDividendCirculating;
-    uint256 public totalDividendSBT;
+    uint256 private totalDividendCirculating;
+    uint256 private totalDividendSBT;
     
     // NFT 版税分配比例
-    uint256 public constant ROYALTY_TO_CIRCULATING = 50;
-    uint256 public constant ROYALTY_TO_DAO = 50;
-    uint256 public daoTreasuryBNB;
-    uint256 public daoTreasuryMFAC;
+    uint256 private constant ROYALTY_TO_CIRCULATING = 50;
+    uint256 private constant ROYALTY_TO_DAO = 50;
+    uint256 private daoTreasuryBNB;
+    uint256 private daoTreasuryMFAC;
     
     struct Proposal {
         uint256 id;
@@ -134,18 +102,18 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         bool exists;
     }
     
-    uint256 public proposalCount;
-    mapping(uint256 => Proposal) public proposals;
-    mapping(uint256 => mapping(address => bool)) public hasVoted;
+    uint256 private proposalCount;
+    mapping(uint256 => Proposal) private proposals;
+    mapping(uint256 => mapping(address => bool)) private hasVoted;
     
-    uint256 public constant VOTING_DURATION = 7 days;
-    uint256 public constant GUARDIAN_COUNT = 50;
+    uint256 private constant VOTING_DURATION = 7 days;
+    uint256 private constant GUARDIAN_COUNT = 50;
     
-    uint256 public constant SUPER_BUILDER_POOL = 140_000_000 * 10**18;
-    uint256 public superBuilderPoolRemaining = SUPER_BUILDER_POOL;
+    uint256 private constant SUPER_BUILDER_POOL = 140_000_000 * 10**18;
+    uint256 private superBuilderPoolRemaining = SUPER_BUILDER_POOL;
     
-    uint256 public constant DIRECT_REFERRAL_REQUIREMENT = 5;
-    uint256 public constant COMMUNITY_SALES_REQUIREMENT = 30;
+    uint256 private constant DIRECT_REFERRAL_REQUIREMENT = 5;
+    uint256 private constant COMMUNITY_SALES_REQUIREMENT = 30;
     
     struct ReferralInfo {
         address referrer;
@@ -155,15 +123,15 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         uint256 rewardClaimed;
     }
     
-    mapping(address => ReferralInfo) public referrals;
-    mapping(address => address[]) public directReferrals;
+    mapping(address => ReferralInfo) private referrals;
+    mapping(address => address[]) private directReferrals;
     
-    address[] public superBuilders;
-    uint256 public currentBuilderPhase = 1; // 分3期
+    address[] private superBuilders;
+    uint256 private currentBuilderPhase = 1; // 分3期
     
-    address public projectWallet;      // 项目方钱包 (营销+俱乐部+团队+Alpha板块 = 11%)
-    address public foundationWallet;   // 基金会钱包 (10%)
-    address public liquidityPool;      // 流动性池 (Alpha底池 10%)
+    address private projectWallet;      // 项目方钱包 (营销+俱乐部+团队+Alpha板块 = 11%)
+    address private foundationWallet;   // 基金会钱包 (10%)
+    address private liquidityPool;      // 流动性池 (Alpha底池 10%)
     
     event NFTPurchased(address indexed buyer, uint256 amount, address indexed referrer);
     event AirdropClaimed(address indexed user, uint256 tokenId, uint256 day, uint256 amount);
@@ -186,13 +154,7 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         address _foundationWallet,
         address _liquidityPool
     ) ERC20("Meme Fish Army Coin", "MFAC") Ownable(msg.sender) {
-        require(_nftContract != address(0), "Invalid NFT contract");
-        require(_projectWallet != address(0), "Invalid project wallet");
-        require(_foundationWallet != address(0), "Invalid foundation wallet");
-        require(_liquidityPool != address(0), "Invalid liquidity pool");
-        
         nftContract = IMemeFishNFT(_nftContract);
-        
         projectWallet = _projectWallet;
         foundationWallet = _foundationWallet;
         liquidityPool = _liquidityPool;
@@ -200,7 +162,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         _mint(_liquidityPool, 100_000_000 * 10**18);
         _mint(_projectWallet, 110_000_000 * 10**18);
         _mint(_foundationWallet, 100_000_000 * 10**18);
-
         _mint(address(this), 690_000_000 * 10**18);
         
         isExcludedFromFee[address(this)] = true;
@@ -215,7 +176,7 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         address to,
         uint256 amount
     ) internal override {
-        if (!feesEnabled || 
+        if (!FEES_ENABLED || 
             isExcludedFromFee[from] || 
             isExcludedFromFee[to] ||
             from == address(0) ||
@@ -278,12 +239,22 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     // ============================================
     
     function purchaseNFT(address referrer) external payable nonReentrant {
-        require(presaleActive, "Presale not active");
-        require(msg.value == nftPrice, "Incorrect BNB amount");
+        require(msg.value == NFT_PRICE, "Incorrect BNB amount");
         require(nftsSold < SBT_NFT_COUNT, "All NFTs sold");
         
+        // 检查是否已在白名单中（即已购买过）
+        (bool checkSuccess, bytes memory checkData) = address(nftContract).call(
+            abi.encodeWithSignature("isWhitelisted(address)", msg.sender)
+        );
+        require(checkSuccess, "Whitelist check failed");
+        bool isWhitelisted = abi.decode(checkData, (bool));
+        require(!isWhitelisted, "Already purchased");
+        
         // 添加到白名单
-        nftContract.addToWhitelist(msg.sender);
+        (bool success,) = address(nftContract).call(
+            abi.encodeWithSignature("addToWhitelist(address)", msg.sender)
+        );
+        require(success, "Whitelist add failed");
         
         nftsSold++;
         
@@ -332,26 +303,12 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         }
     }
     
-    function setPresaleActive(bool _active) external onlyOwner {
-        presaleActive = _active;
-    }
-    
-    function setNFTPrice(uint256 _price) external onlyOwner {
-        nftPrice = _price;
-    }
-    
-    // ============================================
-    // 空投系统
-    // ============================================
-    
-    function startAirdrop() external onlyOwner {
-        require(!airdropStarted, "Airdrop already started");
-        airdropStarted = true;
-        airdropStartTime = block.timestamp;
-    }
-    
     function claimAirdrop(uint256[] calldata tokenIds) external nonReentrant {
-        require(airdropStarted, "Airdrop not started");
+        // 第一次领取时自动开始空投
+        if (airdropStartTime == 0) {
+            airdropStartTime = block.timestamp;
+        }
+        
         require(block.timestamp < airdropStartTime + AIRDROP_DURATION, "Airdrop ended");
         
         uint256 currentDay = (block.timestamp - airdropStartTime) / 1 days;
@@ -385,7 +342,18 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         view 
         returns (uint256) 
     {
-        if (!airdropStarted || block.timestamp >= airdropStartTime + AIRDROP_DURATION) {
+        if (airdropStartTime == 0) {
+            // 空投还未开始（没人领取过），所有NFT都可领取第一天
+            uint256 firstDayClaimable = 0;
+            for (uint256 i = 0; i < tokenIds.length; i++) {
+                if (nftContract.balanceOf(user, tokenIds[i]) > 0) {
+                    firstDayClaimable += AIRDROP_PER_NFT_PER_DAY;
+                }
+            }
+            return firstDayClaimable;
+        }
+        
+        if (block.timestamp >= airdropStartTime + AIRDROP_DURATION) {
             return 0;
         }
         
@@ -416,9 +384,8 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     
 
     function stake(uint256 tokenId) external nonReentrant {
-        // 只有流通 NFT (501-5000) 可以质押
-        require(tokenId > nftContract.AIRDROP_SUPPLY(), "Only circulating NFTs can be staked");
-        require(tokenId <= nftContract.MAX_TOKEN_ID(), "Invalid token ID");
+        // 只有流通 NFT (1-500) 可以质押，SBT不能转账也不需要质押
+        require(tokenId > 0 && tokenId <= nftContract.AIRDROP_SUPPLY(), "Only circulating NFTs can be staked");
         require(nftContract.balanceOf(msg.sender, tokenId) > 0, "Not NFT owner");
         require(!isTokenStaked[tokenId], "Already staked");
         
@@ -508,15 +475,13 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         uint256 stakingDuration = block.timestamp - stakeInfo.lastClaimTime;
         uint256 totalStakingTime = block.timestamp - stakeInfo.startTime;
         
-        // 计算权重 (每30天 * 1.1)
         uint256 periods = totalStakingTime / WEIGHT_PERIOD;
-        uint256 weight = 100; // 初始权重 100%
+        uint256 weight = 100;
         
         for (uint256 i = 0; i < periods; i++) {
             weight = (weight * WEIGHT_MULTIPLIER) / 100;
         }
         
-        // 计算奖励
         uint256 dayCount = stakingDuration / 1 days;
         uint256 reward = (BASE_DAILY_REWARD * dayCount * weight) / 100;
         
@@ -619,10 +584,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         }
     }
     
-    /**
-     * @dev 计算用户的质押分数
-     * 分数 = Σ(质押天数 * 权重)
-     */
     function _calculateStakingScore(address user) private view returns (uint256) {
         StakeInfo[] storage stakes = userStakes[user];
         if (stakes.length == 0) return 0;
@@ -644,10 +605,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         return totalScore;
     }
     
-    /**
-     * @dev 获取质押排名前N名用户
-     * 动态计算，不占用存储
-     */
     function getTopStakers(uint256 topN) public view returns (address[] memory, uint256[] memory) {
         uint256 length = stakingRanking.length < topN ? stakingRanking.length : topN;
         address[] memory topAddresses = new address[](length);
@@ -876,12 +833,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         emit Voted(proposalId, msg.sender, support);
     }
     
-    /**
-     * @dev 关闭提案（仅统计结果，无实际执行）
-     * @param proposalId 提案ID
-     * 注意: 此函数仅关闭投票并统计结果，不执行任何链上操作
-     *      是否采纳提案内容完全由项目方线下决定
-     */
     function closeProposal(uint256 proposalId) external nonReentrant {
         Proposal storage proposal = proposals[proposalId];
         require(proposal.exists, "Proposal does not exist");
@@ -915,7 +866,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     }
     
     function _isVoter(address user) private view returns (bool) {
-        // 选民：所有 NFT 持有者
         for (uint256 i = 1; i <= nftContract.MAX_TOKEN_ID(); i++) {
             if (nftContract.balanceOf(user, i) > 0) {
                 return true;
@@ -941,38 +891,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev 获取提案详情
-     */
-    function getProposal(uint256 proposalId) 
-        external 
-        view 
-        returns (
-            uint256 id,
-            address proposer,
-            string memory description,
-            uint256 yesVotes,
-            uint256 noVotes,
-            uint256 endTime,
-            bool closed,
-            bool passed
-        ) 
-    {
-        Proposal storage proposal = proposals[proposalId];
-        require(proposal.exists, "Proposal does not exist");
-        
-        return (
-            proposal.id,
-            proposal.proposer,
-            proposal.description,
-            proposal.yesVotes,
-            proposal.noVotes,
-            proposal.endTime,
-            proposal.closed,
-            proposal.yesVotes > proposal.noVotes
-        );
-    }
-    
-    /**
      * @dev 获取用户在某提案的投票状态
      */
     function getUserVote(uint256 proposalId, address user) 
@@ -985,9 +903,9 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev 获取提案列表（分页）
+     * @dev 获取所有提案列表
      */
-    function getProposals(uint256 offset, uint256 limit) 
+    function getProposals() 
         external 
         view 
         returns (
@@ -1000,25 +918,19 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         ) 
     {
         uint256 total = proposalCount;
-        if (offset >= total) {
+        if (total == 0) {
             return (new uint256[](0), new address[](0), new uint256[](0), new uint256[](0), new uint256[](0), new bool[](0));
         }
         
-        uint256 end = offset + limit;
-        if (end > total) {
-            end = total;
-        }
+        ids = new uint256[](total);
+        proposers = new address[](total);
+        yesVotes_ = new uint256[](total);
+        noVotes_ = new uint256[](total);
+        endTimes = new uint256[](total);
+        closed_ = new bool[](total);
         
-        uint256 length = end - offset;
-        ids = new uint256[](length);
-        proposers = new address[](length);
-        yesVotes_ = new uint256[](length);
-        noVotes_ = new uint256[](length);
-        endTimes = new uint256[](length);
-        closed_ = new bool[](length);
-        
-        for (uint256 i = 0; i < length; i++) {
-            uint256 proposalId = offset + i + 1;
+        for (uint256 i = 0; i < total; i++) {
+            uint256 proposalId = i + 1;
             Proposal storage p = proposals[proposalId];
             ids[i] = p.id;
             proposers[i] = p.proposer;
@@ -1028,11 +940,7 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
             closed_[i] = p.closed;
         }
     }
-    
-    // ============================================
-    // Super Builder 系统
-    // ============================================
-    
+
     function claimSuperBuilderReward() external nonReentrant {
         ReferralInfo storage info = referrals[msg.sender];
         require(info.qualifiedForBuilder, "Not qualified");
@@ -1107,10 +1015,7 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
     function getSuperBuilders() external view returns (address[] memory) {
         return superBuilders;
     }
-    
-    // ============================================
-    // 管理员函数
-    // ============================================
+
     
     function setDEXPair(address pair, bool isPair) external onlyOwner {
         isDEXPair[pair] = isPair;
@@ -1124,10 +1029,6 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         require(_buyFee <= 10 && _sellFee <= 10, "Fee too high");
         buyFeePercent = _buyFee;
         sellFeePercent = _sellFee;
-    }
-    
-    function setFeesEnabled(bool _enabled) external onlyOwner {
-        feesEnabled = _enabled;
     }
     
     function setFeeDistribution(
@@ -1146,87 +1047,36 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         currentBuilderPhase = _phase;
     }
     
-    /**
-     * @dev 设置 NFT 合约的版税比例和接收者
-     * 
-     * ⚠️ 重要步骤（必须按顺序执行）:
-     * 1. 先在老 NFT 合约调用 transferOwnership(MFACSystem合约地址)
-     * 2. 再调用本函数，触发版税接收者更新
-     * 3. 之后 NFT 在交易市场（如 OpenSea）的版税收入会自动打到本合约
-     * 
-     * 原理: 老合约的 setRoyalty 内部会调用 _setDefaultRoyalty(owner(), royaltyFraction)
-     *      此时 owner() 已经是本合约地址，所以版税接收者会自动设为本合约
-     * 
-     * @param royaltyFraction 版税比例（基点），例如 500 = 5%，最大 10000 = 100%
-     */
-    function setNFTRoyalty(uint96 royaltyFraction) external onlyOwner {
-        // 确认本合约已是 NFT 合约的 owner
-        require(nftContract.owner() == address(this), "MFACSystem must be NFT contract owner first");
-        require(royaltyFraction <= 10000, "Royalty fraction cannot exceed 10000 basis points");
-        
-        // 调用 NFT 合约的 setRoyalty
-        // 由于本合约已是 NFT 合约的 owner，版税接收者会自动设为本合约地址
-        nftContract.setRoyalty(royaltyFraction);
-    }
-    
-    /**
-     * @dev 提取MFAC代币到指定地址
-     * @param to 接收地址
-     * @param amount 提取数量
-     */
     function withdrawMFAC(address to, uint256 amount) external onlyOwner {
         require(to != address(0), "Invalid address");
         require(amount > 0, "Invalid amount");
         _transfer(address(this), to, amount);
     }
-    
-    /**
-     * @dev 提取BNB到指定地址
-     * @param to 接收地址
-     * @param amount 提取数量
-     */
+
     function withdrawBNB(address to, uint256 amount) external onlyOwner {
         require(to != address(0), "Invalid address");
         require(amount > 0, "Invalid amount");
         require(amount <= address(this).balance, "Insufficient balance");
         payable(to).transfer(amount);
     }
-    
-    // ============================================
-    // 白名单管理 (代理 NFT 合约)
-    // ============================================
-    
-    function addToWhitelist(address user) external onlyOwner {
-        nftContract.addToWhitelist(user);
-    }
-    
-    function removeFromWhitelist(address user) external onlyOwner {
-        nftContract.removeFromWhitelist(user);
-    }
-    
-    function batchUpdateWhitelist(address[] calldata users, bool[] calldata statuses) external onlyOwner {
-        nftContract.batchUpdateWhitelist(users, statuses);
-    }
-    
-    function setNFTBaseURI(string memory newURI) external onlyOwner {
-        nftContract.setBaseURI(newURI);
-    }
-    
-    function setNFTMaxMintsPerUser(uint256 newLimit) external onlyOwner {
-        nftContract.setMaxMintsPerUser(newLimit);
-    }
 
-    function getNFTMaxMintsPerUser() external view returns (uint256) {
-        return nftContract.maxMintsPerUser();
+    function proxyCallNFT(bytes calldata data) external onlyOwner returns (bool success, bytes memory returnData) {
+        (success, returnData) = address(nftContract).call(data);
+        require(success, "NFT proxy call failed");
     }
     
-    function isWhitelisted(address user) external view returns (bool) {
-        return nftContract.whitelist(user);
+    function hasPurchasedNFT(address user) external view returns (bool) {
+        // 通过检查白名单状态来判断是否已购买
+        (bool success, bytes memory data) = address(nftContract).staticcall(
+            abi.encodeWithSignature("isWhitelisted(address)", user)
+        );
+        if (!success) return false;
+        return abi.decode(data, (bool));
     }
     
-    // ============================================
-    // 查询函数
-    // ============================================
+    function getNFTPrice() external pure returns (uint256) {
+        return NFT_PRICE;
+    }
     
     function getContractStats() 
         external 
@@ -1258,15 +1108,10 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         );
     }
     
-    // ============================================
-    // NFT 版税收入处理
-    // ============================================
-    
-    /**
-     * @dev 接收 NFT 版税收入（BNB）
-     * 当 NFT 在交易市场（如 OpenSea）交易时，5% 版税会自动打到本合约
-     * 自动分配：50% 给流通NFT持有者，50% 进入DAO国库
-     */
+    function getProposalCount() external view returns (uint256) {
+        return proposalCount;
+    }
+
     receive() external payable {
         if (msg.value > 0) {
             // 分配版税收入
@@ -1286,13 +1131,7 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
             emit NFTRoyaltyReceived(msg.value, toCirculating, toProject);
         }
     }
-    
-    /**
-     * @dev 流通 NFT 持有者领取 BNB 版税分红（优化版：用户提供tokenId）
-     * 只有持有流通NFT（tokenId 1-500）的用户可以领取
-     * 按持有NFT数量平均分配
-     * @param circulatingTokenIds 持有的流通NFT的tokenId数组 (1-500)
-     */
+
     function claimNFTRoyalty(uint256[] calldata circulatingTokenIds) external nonReentrant {
         require(nftRoyaltyPool > 0, "No royalty to claim");
         require(circulatingTokenIds.length > 0, "No token IDs provided");
@@ -1311,37 +1150,26 @@ contract MFACSystem is ERC20, Ownable, ReentrancyGuard {
         
         require(validCount > 0, "No valid circulating NFT");
         
-        // 计算可领取金额
-        // 版税按流通NFT总数平均分配
         uint256 totalCirculatingNFT = CIRCULATING_NFT_COUNT;
         uint256 perNFT = nftRoyaltyPool / totalCirculatingNFT;
         uint256 claimAmount = perNFT * validCount;
         
         require(claimAmount > 0, "Nothing to claim");
         require(claimAmount <= nftRoyaltyPool, "Insufficient pool");
-        
-        // 更新池余额
+
         nftRoyaltyPool -= claimAmount;
-        
-        // 转账 BNB
+
         payable(msg.sender).transfer(claimAmount);
         
         emit NFTRoyaltyClaimed(msg.sender, claimAmount);
     }
-    
-    /**
-     * @dev 查询用户可领取的 NFT 版税金额（优化版：用户提供tokenId）
-     * @param user 用户地址
-     * @param circulatingTokenIds 持有的流通NFT的tokenId数组
-     */
+
     function getPendingNFTRoyalty(
         address user,
         uint256[] calldata circulatingTokenIds
     ) external view returns (uint256) {
         if (nftRoyaltyPool == 0) return 0;
         if (circulatingTokenIds.length == 0) return 0;
-        
-        // 验证并统计用户持有的流通NFT数量
         uint256 validCount = 0;
         for (uint256 i = 0; i < circulatingTokenIds.length; i++) {
             uint256 tokenId = circulatingTokenIds[i];

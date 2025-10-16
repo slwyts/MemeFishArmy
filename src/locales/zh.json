@@ -25,7 +25,7 @@
       "status_connect_prompt": "连接钱包以验证您的铸造资格",
       "button_connect": "连接钱包",
       "button_minting": "铸造中...",
-      "button_not_whitelisted": "未在白名单",
+      "button_not_whitelisted": "去预售购买 NFT",
       "button_limit_reached": "已达到上限",
       "button_mint_now": "立即铸造",
       "feedback_sending": "交易已发送，等待区块链确认...",

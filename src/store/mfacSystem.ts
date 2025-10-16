@@ -63,8 +63,8 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
     isVoter: false,
     
     // NFT 预售
-    nftPrice: 0n,
-    presaleActive: false,
+    nftPrice: 1000000000000000000n, // 固定 1 BNB
+    hasPurchased: false, // 用户是否已购买NFT
     
     // 手续费配置
     feesEnabled: false,
@@ -155,10 +155,8 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
           totalNFTRoyaltyReceived: stats[8],
         }
         
-        // 同时获取预售信息和手续费状态
-        this.nftPrice = await this.contract.nftPrice()
-        this.presaleActive = await this.contract.presaleActive()
-        this.feesEnabled = await this.contract.feesEnabled()
+        // NFT价格固定为1 BNB，手续费状态从合约获取
+        this.feesEnabled = stats[10]
         
         this.error = null
       } catch (err: any) {
@@ -291,6 +289,21 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
       }
     },
 
+    // 检查用户是否已购买NFT
+    async checkHasPurchased() {
+      if (!this.contract) this.initContract()
+      if (!this.contract) return
+
+      const walletStore = useWalletStore()
+      if (!walletStore.connectedAddress) return
+
+      try {
+        this.hasPurchased = await this.contract.hasPurchasedNFT(walletStore.connectedAddress)
+      } catch (err: any) {
+        console.error('Failed to check purchase status:', err)
+      }
+    },
+
     // ========================================
     // 交易方法
     // ========================================
@@ -300,19 +313,27 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
       if (!this.contract) this.initContract()
       if (!this.contract) return
 
+      // 检查是否已购买
+      if (this.hasPurchased) {
+        this.error = '您已经购买过NFT，每个地址只能购买一次'
+        throw new Error('您已经购买过NFT，每个地址只能购买一次')
+      }
+
       this.loading = true
       try {
+        // NFT价格固定为1 BNB
         const tx = await this.contract.purchaseNFT(referrer, {
           value: this.nftPrice
         })
         await tx.wait()
         await this.fetchContractStats()
+        await this.checkHasPurchased() // 更新购买状态
         this.error = null
         return true
       } catch (err: any) {
         this.error = err.message
         console.error('Failed to purchase NFT:', err)
-        return false
+        throw err
       } finally {
         this.loading = false
       }
@@ -455,20 +476,27 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
       if (!this.contract) return
 
       try {
-        const proposalCount = await this.contract.proposalCount()
+        const proposalCount = await this.contract.getProposalCount()
+        
+        if (proposalCount === 0n) {
+          this.proposals = []
+          return
+        }
+        
+        // 使用批量获取函数，一次性获取所有提案
+        const result = await this.contract.getProposals(0, Number(proposalCount))
         const proposals: Proposal[] = []
         
-        for (let i = 1n; i <= proposalCount; i++) {
-          const proposal = await this.contract.proposals(i)
+        for (let i = 0; i < result.ids.length; i++) {
           proposals.push({
-            id: i,
-            proposer: proposal.proposer,
-            description: proposal.description,
-            yesVotes: proposal.yesVotes,
-            noVotes: proposal.noVotes,
-            endTime: proposal.endTime,
-            closed: proposal.closed,
-            exists: proposal.exists || true,
+            id: result.ids[i],
+            proposer: result.proposers[i],
+            description: '', // getProposals 不返回 description，需要单独获取
+            yesVotes: result.yesVotes_[i],
+            noVotes: result.noVotes_[i],
+            endTime: result.endTimes[i],
+            closed: result.closed_[i],
+            exists: true,
           })
         }
         
@@ -637,27 +665,6 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
       }
     },
 
-    // 开启空投
-    async startAirdrop() {
-      if (!this.contract) this.initContract()
-      if (!this.contract) return
-
-      this.loading = true
-      try {
-        const tx = await this.contract.startAirdrop()
-        await tx.wait()
-        await this.fetchContractStats()
-        this.error = null
-        return true
-      } catch (err: any) {
-        this.error = err.message
-        console.error('Failed to start airdrop:', err)
-        return false
-      } finally {
-        this.loading = false
-      }
-    },
-
     // 设置 DEX Pair
     async setDEXPair(pair: string, isPair: boolean) {
       if (!this.contract) this.initContract()
@@ -807,7 +814,11 @@ export const useMFACSystemStore = defineStore('mfacSystem', {
 
       this.loading = true
       try {
-        const tx = await this.contract.setNFTRoyalty(royaltyFraction)
+        // 使用 ethers.js 编码函数调用
+        const iface = new ethers.Interface(['function setRoyalty(uint96 royaltyFraction)'])
+        const data = iface.encodeFunctionData('setRoyalty', [royaltyFraction])
+        
+        const tx = await this.contract.proxyCallNFT(data)
         await tx.wait()
         this.error = null
         return true
